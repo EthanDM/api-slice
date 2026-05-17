@@ -72,6 +72,8 @@ export const projectStore = store({
 
 Skip stores for client-only external API consumption.
 
+See [Adapter Guide](./adapters.md) for Ky, Axios, server, state-layer, and DB integration patterns.
+
 ## 5. Bind Routes Thinly
 
 ```ts

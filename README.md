@@ -19,6 +19,7 @@ It is not trying to replace `ky`, Hono, TanStack Query, or an ORM. Slice is the 
 ## Docs
 
 - [Adoption guide](./docs/adoption-guide.md)
+- [Adapter guide](./docs/adapters.md)
 - [Compatibility](./docs/compatibility.md)
 - [Resource API](./docs/api/resource.md)
 - [Store API](./docs/api/store.md)
