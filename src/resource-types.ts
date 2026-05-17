@@ -323,6 +323,20 @@ export type Resource<
   >;
 };
 
+/** Any resource instance that can be bound to an HTTP client. */
+export type AnyResource = Resource<
+  any,
+  any,
+  any,
+  any,
+  any
+>;
+
+/** Client map produced by binding a shared HTTP adapter to named resources. */
+export type SliceClient<Resources extends Record<string, AnyResource>> = {
+  [Name in keyof Resources]: ReturnType<Resources[Name]["client"]>;
+};
+
 /** Preserves action-specific schemas and invalidation metadata after inference. */
 export type RuntimeActions<Actions extends ResourceActionMap> = {
   [Name in keyof Actions & string]: {

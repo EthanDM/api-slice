@@ -127,6 +127,23 @@ await client.delete("project_1");
 
 Slice also accepts any custom HTTP client with the same request shape, so `ky`, Hono RPC, and test fakes still work.
 
+Bind one HTTP adapter to several resources with `createSliceClient()`:
+
+```ts
+import { createSliceClient } from "@ethandm/api-slice";
+
+const api = createSliceClient({
+  http,
+  resources: {
+    projects,
+    users,
+  },
+});
+
+await api.projects.list({ search: "alpha" });
+await api.users.detail("user_1");
+```
+
 Custom actions use the same client:
 
 ```ts

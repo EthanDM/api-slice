@@ -46,6 +46,25 @@ await client.update(id, input);
 await client.delete(id);
 ```
 
+## Slice Client
+
+Use `createSliceClient()` when many resources share one HTTP adapter:
+
+```ts
+const api = createSliceClient({
+  http,
+  resources: {
+    projects,
+    users,
+  },
+});
+
+await api.projects.list(filters);
+await api.users.detail("user_1");
+```
+
+This helper does not mutate resources or store global defaults. It only calls `resource.client(http)` for each named resource.
+
 ## Actions
 
 Use actions for API verbs that are not CRUD:

@@ -13,7 +13,7 @@ export type {
   ApiErrorPayload,
   NormalizedApiError,
 } from "./errors.js";
-export { resource } from "./resource.js";
+export { createSliceClient, resource } from "./resource.js";
 export { describeResource } from "./resource.js";
 export {
   createSliceRecorder,
@@ -31,6 +31,7 @@ export type {
   HttpMethod,
   HttpRequestMeta,
   Id,
+  AnyResource,
   Resource,
   ResourceActionDescription,
   ResourceActionConfig,
@@ -49,6 +50,7 @@ export type {
   ResourceOperationName,
   ResourceOperations,
   ResourceSchemas,
+  SliceClient,
 } from "./resource.js";
 export type {
   SliceRecorder,

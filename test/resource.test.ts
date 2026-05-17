@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
-import { describeResource, resource, type HttpClient } from "../src/index.js";
+import {
+  createSliceClient,
+  describeResource,
+  resource,
+  type HttpClient,
+} from "../src/index.js";
 
 const ProjectSchema = z.object({
   id: z.string(),
@@ -168,6 +173,51 @@ describe("resource", () => {
         query: undefined,
         body: undefined,
         meta: { resource: "projects", operation: "delete" },
+      },
+    ]);
+  });
+
+  it("binds one HTTP client to multiple resources", async () => {
+    const tasks = resource({
+      name: "tasks",
+      path: "/tasks",
+      schemas: {
+        entity: ProjectSchema,
+        listInput: ProjectListInputSchema,
+        createInput: CreateProjectSchema,
+        updateInput: UpdateProjectSchema,
+      },
+    });
+    const requests: Parameters<HttpClient>[0][] = [];
+    const http: HttpClient = async <Output>(request: Parameters<HttpClient>[0]) => {
+      requests.push(request);
+
+      return [{ id: "item_1", name: "Alpha" }] as Output;
+    };
+
+    const api = createSliceClient({
+      http,
+      resources: {
+        projects,
+        tasks,
+      },
+    });
+
+    await api.projects.list({ search: "alpha" });
+    await api.tasks.list({ search: "beta" });
+
+    expect(requests).toEqual([
+      {
+        method: "GET",
+        path: "/projects",
+        query: { search: "alpha" },
+        meta: { resource: "projects", operation: "list" },
+      },
+      {
+        method: "GET",
+        path: "/tasks",
+        query: { search: "beta" },
+        meta: { resource: "tasks", operation: "list" },
       },
     ]);
   });

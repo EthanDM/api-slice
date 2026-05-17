@@ -15,6 +15,20 @@ const http = createFetchHttpClient({
 });
 ```
 
+Bind the shared adapter once when an app has multiple resources:
+
+```ts
+import { createSliceClient } from "@ethandm/api-slice";
+
+const api = createSliceClient({
+  http,
+  resources: {
+    projects,
+    users,
+  },
+});
+```
+
 Use an existing `ky` instance by adapting it to Slice's `HttpClient` shape:
 
 ```ts

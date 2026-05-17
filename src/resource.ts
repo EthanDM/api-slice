@@ -9,6 +9,8 @@ import {
   parseRequired,
 } from "./resource-request.js";
 import type {
+  AnyResource,
+  HttpClient,
   InferSchemaInput,
   InferSchemaOutput,
   OptionalSchemaInput,
@@ -20,6 +22,7 @@ import type {
   ResourceKeys,
   RuntimeActions,
   RuntimeResourceAction,
+  SliceClient,
 } from "./resource-types.js";
 
 /**
@@ -253,6 +256,25 @@ export function describeResource(
   return resource.describe();
 }
 
+/**
+ * Binds one HTTP adapter to a named set of resources without mutating the
+ * resources themselves. Use this for app-level API modules that share auth,
+ * base URL, logging, or recorder behavior across many resource clients.
+ */
+export function createSliceClient<
+  Resources extends Record<string, AnyResource>,
+>(config: {
+  http: HttpClient;
+  resources: Resources;
+}): SliceClient<Resources> {
+  return Object.fromEntries(
+    Object.entries(config.resources).map(([name, resource]) => [
+      name,
+      resource.client(config.http),
+    ]),
+  ) as SliceClient<Resources>;
+}
+
 /** Lists CRUD operations with custom transport mappings for diagnostics. */
 function getConfiguredOperations(
   operations: ResourceConfig<
@@ -273,6 +295,7 @@ function getConfiguredOperations(
 }
 
 export type {
+  AnyResource,
   HttpClient,
   HttpMethod,
   HttpRequestMeta,
@@ -297,4 +320,5 @@ export type {
   ResourceSchemas,
   RuntimeResourceAction,
   RuntimeResourceActionMap,
+  SliceClient,
 } from "./resource-types.js";
