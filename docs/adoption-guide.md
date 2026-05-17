@@ -112,6 +112,10 @@ const recorder = createSliceRecorder();
 getSliceSnapshot({ resources: [projects], recorder });
 describeResource(projects);
 describeStore(projectStore);
+createSliceManifest({
+  resources: { projects },
+  stores: { projectStore },
+});
 ```
 
 ## 8. Verify

@@ -23,6 +23,7 @@ It is not trying to replace `ky`, Hono, TanStack Query, or an ORM. Slice is the 
 - [Compatibility](./docs/compatibility.md)
 - [Resource API](./docs/api/resource.md)
 - [Store API](./docs/api/store.md)
+- [Manifest API](./docs/api/manifest.md)
 - [Fetch adapter](./docs/api/fetch.md)
 - [Hono adapter](./docs/api/hono.md)
 - [React Query adapter](./docs/api/react-query.md)
@@ -159,6 +160,24 @@ Resources can describe themselves for debug panels, docs, and coding agents:
 import { describeResource } from "@ethandm/api-slice";
 
 describeResource(projects);
+```
+
+## Manifest
+
+Create a read-only manifest for docs, debug panels, support dumps, and agent inspection:
+
+```ts
+import { createSliceManifest } from "@ethandm/api-slice";
+
+const manifest = createSliceManifest({
+  resources: {
+    projects,
+    users,
+  },
+  stores: {
+    projectStore,
+  },
+});
 ```
 
 ### Fetch Logging

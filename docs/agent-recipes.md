@@ -193,6 +193,10 @@ Use introspection helpers:
 ```ts
 describeResource(projects);
 describeStore(projectStore);
+createSliceManifest({
+  resources: { projects },
+  stores: { projectStore },
+});
 ```
 
 If the metadata says an action has no input or no output, do not invent schemas without checking the actual domain need.

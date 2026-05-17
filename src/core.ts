@@ -13,6 +13,11 @@ export type {
   ApiErrorPayload,
   NormalizedApiError,
 } from "./errors.js";
+export { createSliceManifest } from "./manifest.js";
+export type {
+  SliceManifest,
+  SliceManifestConfig,
+} from "./manifest.js";
 export { createSliceClient, resource } from "./resource.js";
 export { describeResource } from "./resource.js";
 export {

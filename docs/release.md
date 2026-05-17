@@ -39,7 +39,7 @@ npm install @ethandm/api-slice zod
 Then verify imports:
 
 ```ts
-import { createSliceClient, resource, store } from "@ethandm/api-slice";
+import { createSliceClient, createSliceManifest, resource, store } from "@ethandm/api-slice";
 import { createFetchHttpClient } from "@ethandm/api-slice/fetch";
 import { createHonoResourceRoutes } from "@ethandm/api-slice/hono";
 import { createResourceHooks, createSliceHooks } from "@ethandm/api-slice/react-query";

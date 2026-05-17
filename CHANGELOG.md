@@ -13,4 +13,5 @@ This project uses semantic versioning once published.
 - Added Hono route adapter for conventional resource CRUD/action routes.
 - Added TanStack Query hook and cache helper adapter.
 - Added `createSliceHooks()` for binding React Query hooks across a client registry.
+- Added `createSliceManifest()` for read-only resource/store catalogs.
 - Added API errors, request recorder, resource/store introspection, docs, examples, and Codex skill guidance.
