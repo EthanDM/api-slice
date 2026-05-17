@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
-import { createHonoResourceRoutes, resource } from "../src/index.js";
+import { resource } from "../src/index.js";
+import { createHonoResourceRoutes } from "../src/hono.js";
 
 const projects = resource({
   name: "projects",

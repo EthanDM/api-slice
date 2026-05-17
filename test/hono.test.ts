@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
-import { createHonoResourceRoutes, resource } from "../src/index.js";
+import { resource } from "../src/index.js";
+import { createHonoResourceRoutes } from "../src/hono.js";
 
 const ProjectSchema = z.object({
   id: z.string(),

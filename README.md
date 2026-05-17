@@ -28,6 +28,21 @@ It is not trying to replace `ky`, Hono, TanStack Query, or an ORM. Slice is the 
 - [Recorder API](./docs/api/recorder.md)
 - [Release guide](./docs/release.md)
 
+## Entrypoints
+
+The root package intentionally avoids Hono and React Query runtime imports:
+
+```ts
+import { resource, createFetchHttpClient } from "@ethandm/api-slice";
+```
+
+Framework adapters live behind explicit subpaths:
+
+```ts
+import { createHonoResourceRoutes } from "@ethandm/api-slice/hono";
+import { createResourceHooks } from "@ethandm/api-slice/react-query";
+```
+
 ## Install
 
 ```sh

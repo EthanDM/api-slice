@@ -33,6 +33,8 @@ Core resource clients do not require Hono, React, or TanStack Query. Those packa
 
 ## Package Entrypoints
 
+The root entrypoint is dependency-light and does not import Hono or TanStack Query at runtime.
+
 ```ts
 import { resource, store } from "@ethandm/api-slice";
 import { resource } from "@ethandm/api-slice/core";

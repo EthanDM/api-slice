@@ -8,6 +8,8 @@ import {
   getSliceQuerySnapshot,
   invalidateResource,
   invalidateResourceQueries,
+} from "../src/react-query.js";
+import {
   resource,
 } from "../src/index.js";
 
