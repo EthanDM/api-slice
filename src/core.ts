@@ -18,6 +18,12 @@ export {
   createSliceRecorder,
   getSliceSnapshot,
 } from "./recorder.js";
+export {
+  command,
+  mutation,
+  query,
+  store,
+} from "./store.js";
 export type {
   HttpClient,
   HttpMethod,
@@ -48,3 +54,17 @@ export type {
   SliceRecorderUnsubscribe,
   SliceSnapshot,
 } from "./recorder.js";
+export type {
+  Store,
+  StoreAction,
+  StoreActionConfig,
+  StoreActionInput,
+  StoreActionKind,
+  StoreActionMap,
+  StoreActionMetadata,
+  StoreActionOutput,
+  StoreActionRunArgs,
+  StoreConfig,
+  StoreRunArgs,
+  StoreRunOutput,
+} from "./store.js";

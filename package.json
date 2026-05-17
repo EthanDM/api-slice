@@ -22,6 +22,10 @@
       "types": "./dist/recorder.d.ts",
       "default": "./dist/recorder.js"
     },
+    "./store": {
+      "types": "./dist/store.d.ts",
+      "default": "./dist/store.js"
+    },
     "./hono": {
       "types": "./dist/hono.d.ts",
       "default": "./dist/hono.js"

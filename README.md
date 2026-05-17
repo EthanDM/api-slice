@@ -343,6 +343,93 @@ const queryState = getSliceQuerySnapshot(queryClient, [projects]);
 
 `getSliceQuerySnapshot()` intentionally omits cached data by default because API payloads often include PII.
 
+## Backend Store Actions
+
+Use stores when you want a centralized catalog of backend operations without forcing those operations into CRUD or Drizzle-specific shapes.
+
+```ts
+import { command, mutation, query, store } from "@cafecito/slice/store";
+import { z } from "zod";
+
+type AppContext = {
+  db: D1Database;
+  user: { id: string; name: string };
+  env: Env;
+};
+
+const LienWorkQueueInputSchema = z.object({
+  scope: z.enum(["mine", "team"]).default("team"),
+  includeResolved: z.boolean().optional(),
+  limit: z.number().optional(),
+});
+
+const LienWorkQueueItemSchema = z.object({
+  id: z.string(),
+  fileId: z.string(),
+  debtorName: z.string(),
+});
+
+export const lienStore = store({
+  name: "liens",
+  actions: {
+    workQueue: query({
+      input: LienWorkQueueInputSchema,
+      output: z.array(LienWorkQueueItemSchema),
+      run: async ({ ctx, input }: { ctx: AppContext; input: z.output<typeof LienWorkQueueInputSchema> }) => {
+        return getLienWorkQueue(ctx.db, {
+          assignedUserId: input.scope === "mine" ? ctx.user.id : null,
+          includeResolved: input.includeResolved,
+          limit: input.limit,
+        });
+      },
+    }),
+
+    createReceivable: mutation({
+      input: CreateReceivableSchema,
+      output: ReceivableSchema,
+      run: async ({ ctx, input }: { ctx: AppContext; input: z.output<typeof CreateReceivableSchema> }) => {
+        return createReceivable(ctx.db, input.fileId, input);
+      },
+    }),
+
+    sendFollowup: command({
+      input: SendLienFollowupSchema,
+      output: SendLienFollowupResultSchema,
+      run: async ({ ctx, input }: { ctx: AppContext; input: z.output<typeof SendLienFollowupSchema> }) => {
+        return sendLienFollowup(ctx.env, input.noticeId, ctx.user.name);
+      },
+    }),
+  },
+});
+```
+
+Routes and services can use direct action calls:
+
+```ts
+const data = await lienStore.actions.workQueue.run({
+  ctx: { db: c.env.DB, user: getUser(c), env: c.env },
+  input: { scope: "mine" },
+});
+```
+
+Tooling can use the generic runner and metadata catalog:
+
+```ts
+await lienStore.run("workQueue", {
+  ctx,
+  input: { scope: "team", limit: 25 },
+});
+
+lienStore.listActions();
+// [
+//   { name: "workQueue", kind: "query", hasInput: true, hasOutput: true },
+//   { name: "createReceivable", kind: "mutation", hasInput: true, hasOutput: true },
+//   { name: "sendFollowup", kind: "command", hasInput: true, hasOutput: true }
+// ]
+```
+
+The store module is not a database adapter. It is a typed action catalog for service-layer operations that may read a DB, write a DB, call AI providers, send emails, or trigger payment workflows.
+
 ## Invalidation Defaults
 
 ```ts
@@ -419,6 +506,7 @@ Built now:
 - optional structured fetch logging
 - optional request recorder and debug snapshots
 - fetch auth callbacks for app-owned unauthorized/forbidden handling
+- backend store action catalogs with query/mutation/command intent
 - TanStack Query hook adapter
 - TanStack Query cache utilities and data-free state snapshots
 - Hono route adapter
