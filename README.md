@@ -329,7 +329,7 @@ Operation overrides can customize method, path, path params, query params, reque
 The core client works without React, React Query, or any cache library. Use this adapter only in apps that already use TanStack Query or intentionally want it for server-state caching.
 
 ```ts
-import { createResourceHooks } from "@ethandm/api-slice/react-query";
+import { createResourceHooks, createSliceHooks } from "@ethandm/api-slice/react-query";
 
 export const projectClient = projects.client(http);
 export const projectHooks = createResourceHooks(projects, projectClient);
@@ -372,6 +372,21 @@ archiveProject.mutate({
   id: "project_1",
   input: { reason: "Done" },
 });
+```
+
+If you already use `createSliceClient()`, bind hooks as a matching registry:
+
+```ts
+const hooks = createSliceHooks({
+  resources: {
+    projects,
+    users,
+  },
+  clients: api,
+});
+
+hooks.projects.useList({ search: "alpha" });
+hooks.users.useDetail("user_1");
 ```
 
 Mutation hooks invalidate the resource defaults automatically. You can override or disable that per mutation:

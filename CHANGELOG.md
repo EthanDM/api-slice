@@ -12,4 +12,5 @@ This project uses semantic versioning once published.
 - Added backend `store()` action catalogs with `query()`, `mutation()`, and `command()` intent.
 - Added Hono route adapter for conventional resource CRUD/action routes.
 - Added TanStack Query hook and cache helper adapter.
+- Added `createSliceHooks()` for binding React Query hooks across a client registry.
 - Added API errors, request recorder, resource/store introspection, docs, examples, and Codex skill guidance.

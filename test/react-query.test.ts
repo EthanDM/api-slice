@@ -5,12 +5,15 @@ import { z } from "zod";
 import {
   clearResourceQueries,
   clearSliceQueries,
+  createSliceHooks,
   getSliceQuerySnapshot,
   invalidateResource,
   invalidateResourceQueries,
 } from "../src/react-query.js";
 import {
+  createSliceClient,
   resource,
+  type HttpClient,
 } from "../src/index.js";
 
 describe("invalidateResourceQueries", () => {
@@ -98,6 +101,59 @@ describe("React Query state helpers", () => {
           isInvalidated: false,
         },
       ],
+    });
+  });
+});
+
+describe("createSliceHooks", () => {
+  it("binds React Query hooks for multiple resource clients", () => {
+    const projects = resource({
+      name: "projects",
+      path: "/projects",
+      schemas: {
+        entity: z.object({ id: z.string() }),
+      },
+    });
+    const tasks = resource({
+      name: "tasks",
+      path: "/tasks",
+      schemas: {
+        entity: z.object({ id: z.string() }),
+      },
+    });
+    const http: HttpClient = async <Output>() => [] as Output;
+    const clients = createSliceClient({
+      http,
+      resources: {
+        projects,
+        tasks,
+      },
+    });
+
+    const hooks = createSliceHooks({
+      resources: {
+        projects,
+        tasks,
+      },
+      clients,
+    });
+
+    expect(Object.keys(hooks)).toEqual(["projects", "tasks"]);
+    expect(hooks.projects).toEqual({
+      useAction: expect.any(Function),
+      useCreate: expect.any(Function),
+      useDelete: expect.any(Function),
+      useDetail: expect.any(Function),
+      useList: expect.any(Function),
+      useUpdate: expect.any(Function),
+    });
+    expect(hooks.tasks).toEqual({
+      useAction: expect.any(Function),
+      useCreate: expect.any(Function),
+      useDelete: expect.any(Function),
+      useDetail: expect.any(Function),
+      useList: expect.any(Function),
+      useUpdate: expect.any(Function),
     });
   });
 });

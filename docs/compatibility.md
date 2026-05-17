@@ -40,7 +40,7 @@ import { createSliceClient, resource, store } from "@ethandm/api-slice";
 import { resource } from "@ethandm/api-slice/core";
 import { createFetchHttpClient } from "@ethandm/api-slice/fetch";
 import { createHonoResourceRoutes } from "@ethandm/api-slice/hono";
-import { createResourceHooks } from "@ethandm/api-slice/react-query";
+import { createResourceHooks, createSliceHooks } from "@ethandm/api-slice/react-query";
 import { createSliceRecorder } from "@ethandm/api-slice/recorder";
 import { store } from "@ethandm/api-slice/store";
 ```

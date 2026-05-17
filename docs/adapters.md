@@ -120,9 +120,17 @@ const projectsList = await client.list({ search: "alpha" });
 Use TanStack Query only when the app already wants TanStack Query for server-state caching:
 
 ```ts
-import { createResourceHooks } from "@ethandm/api-slice/react-query";
+import { createResourceHooks, createSliceHooks } from "@ethandm/api-slice/react-query";
 
 const hooks = createResourceHooks(projects, projects.client(http));
+
+const sliceHooks = createSliceHooks({
+  resources: {
+    projects,
+    users,
+  },
+  clients: api,
+});
 ```
 
 For Zustand, Jotai, Redux, or local component state, call the plain client from your existing action/effect layer. Slice should not generate framework-specific state stores in v0.

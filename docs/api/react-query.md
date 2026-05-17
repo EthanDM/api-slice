@@ -9,6 +9,29 @@ const projectClient = projects.client(http);
 const projectHooks = createResourceHooks(projects, projectClient);
 ```
 
+Use `createSliceHooks()` when multiple resources already share clients from `createSliceClient()`:
+
+```ts
+const api = createSliceClient({
+  http,
+  resources: {
+    projects,
+    users,
+  },
+});
+
+const hooks = createSliceHooks({
+  resources: {
+    projects,
+    users,
+  },
+  clients: api,
+});
+
+hooks.projects.useList(filters);
+hooks.users.useDetail("user_1");
+```
+
 ## Hooks
 
 ```ts

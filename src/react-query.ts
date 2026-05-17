@@ -11,9 +11,11 @@ import {
 
 import type { Id, Resource, ResourceClient } from "./resource.js";
 import type {
+  AnyResource,
   ResourceActionOutput,
   ResourceActionRequest,
   RuntimeResourceActionMap,
+  SliceClient,
 } from "./resource.js";
 
 type QueryKey = readonly unknown[];
@@ -130,6 +132,19 @@ export type ResourceHooks<
   >;
 };
 
+/** Hook registry produced by binding Slice clients to matching resources. */
+export type SliceHooks<Resources extends Record<string, AnyResource>> = {
+  [Name in keyof Resources]: Resources[Name] extends Resource<
+    infer Entity,
+    infer ListInput,
+    infer CreateInput,
+    infer UpdateInput,
+    infer Actions
+  >
+    ? ResourceHooks<Entity, ListInput, CreateInput, UpdateInput, Actions>
+    : never;
+};
+
 /**
  * Creates React Query hooks for an already-configured resource client. The
  * adapter does not create its own QueryClient; it uses the nearest provider so
@@ -227,6 +242,33 @@ export function createResourceHooks<
       });
     },
   };
+}
+
+/**
+ * Creates a named hook registry from already-bound resource clients. This stays
+ * in the React Query adapter so core clients remain usable without React.
+ */
+export function createSliceHooks<
+  Resources extends Record<string, AnyResource>,
+>(config: {
+  resources: Resources;
+  clients: SliceClient<Resources>;
+}): SliceHooks<Resources> {
+  return Object.fromEntries(
+    Object.entries(config.resources).map(([name, resource]) => [
+      name,
+      createResourceHooks(
+        resource as Resource<any, any, any, any, any>,
+        config.clients[name as keyof Resources] as ResourceClient<
+          any,
+          any,
+          any,
+          any,
+          any
+        >,
+      ),
+    ]),
+  ) as SliceHooks<Resources>;
 }
 
 /** Invalidates each generated query key using TanStack Query's public API. */

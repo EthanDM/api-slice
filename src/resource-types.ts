@@ -323,14 +323,10 @@ export type Resource<
   >;
 };
 
-/** Any resource instance that can be bound to an HTTP client. */
-export type AnyResource = Resource<
-  any,
-  any,
-  any,
-  any,
-  any
->;
+/** Any resource-like instance that can be bound to an HTTP client. */
+export type AnyResource = {
+  client: (http: HttpClient) => any;
+};
 
 /** Client map produced by binding a shared HTTP adapter to named resources. */
 export type SliceClient<Resources extends Record<string, AnyResource>> = {
