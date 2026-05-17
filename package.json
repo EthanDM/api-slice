@@ -1,17 +1,17 @@
 {
-  "name": "@ethandm/slice",
+  "name": "@ethandm/api-slice",
   "version": "0.1.0",
   "description": "Typed resource and backend action layer for TypeScript apps.",
   "author": "Ethan Millstein <me@ethandm.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/EthanDM/slice.git"
+    "url": "https://github.com/EthanDM/api-slice.git"
   },
   "bugs": {
-    "url": "https://github.com/EthanDM/slice/issues"
+    "url": "https://github.com/EthanDM/api-slice/issues"
   },
-  "homepage": "https://github.com/EthanDM/slice#readme",
+  "homepage": "https://github.com/EthanDM/api-slice#readme",
   "type": "module",
   "sideEffects": false,
   "main": "./dist/index.js",
@@ -50,7 +50,11 @@
     "dist",
     "README.md",
     "LICENSE",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "docs",
+    "examples",
+    "skills",
+    "AGENTS.md"
   ],
   "publishConfig": {
     "access": "public"

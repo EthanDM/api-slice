@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to `@ethandm/slice` will be documented here.
+All notable changes to `@ethandm/api-slice` will be documented here.
 
 This project uses semantic versioning once published.
 

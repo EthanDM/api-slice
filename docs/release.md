@@ -1,6 +1,6 @@
 # Release Guide
 
-This guide is for publishing `@ethandm/slice`.
+This guide is for publishing `@ethandm/api-slice`.
 
 ## Preflight
 
@@ -33,16 +33,16 @@ npm publish --access public
 In a temporary app:
 
 ```sh
-npm install @ethandm/slice zod
+npm install @ethandm/api-slice zod
 ```
 
 Then verify imports:
 
 ```ts
-import { resource, store } from "@ethandm/slice";
-import { createFetchHttpClient } from "@ethandm/slice/fetch";
-import { createHonoResourceRoutes } from "@ethandm/slice/hono";
-import { createResourceHooks } from "@ethandm/slice/react-query";
+import { resource, store } from "@ethandm/api-slice";
+import { createFetchHttpClient } from "@ethandm/api-slice/fetch";
+import { createHonoResourceRoutes } from "@ethandm/api-slice/hono";
+import { createResourceHooks } from "@ethandm/api-slice/react-query";
 ```
 
 ## Versioning

@@ -1,19 +1,19 @@
 # Slice
 
-`@ethandm/slice` is a small typed resource layer for TypeScript apps. The v0 goal is narrow: define an API resource once and get stable query keys, validated client calls, TanStack Query hooks, default mutation invalidation, and normalized API errors.
+`@ethandm/api-slice` is a small typed API resource layer for TypeScript apps. The v0 goal is narrow: define an API resource once and get stable query keys, validated client calls, optional adapters, and normalized API errors.
 
-It is not trying to replace `ky`, Hono, TanStack Query, or an ORM. Slice is the boring glue layer above those tools.
+It is not trying to replace `ky`, Hono, TanStack Query, or an ORM. Slice is the boring contract layer above those tools, and each integration is opt-in.
 
 ## Status
 
-`@ethandm/slice` is pre-1.0. The public API is intended to be usable, but breaking changes may happen before `1.0.0`.
+`@ethandm/api-slice` is pre-1.0. The public API is intended to be usable, but breaking changes may happen before `1.0.0`.
 
 ## Choose Your Path
 
 - Client-only or React Native: start with `resource()` and `createFetchHttpClient()`.
 - Hono backend: add `createHonoResourceRoutes()`.
 - Service-layer/backend workflow: add `store()`, `query()`, `mutation()`, and `command()`.
-- TanStack Query app: add `createResourceHooks()`.
+- TanStack Query app: optionally add `createResourceHooks()` from the React Query adapter.
 - Inconsistent backend API: use `operations`.
 
 ## Docs
@@ -31,10 +31,10 @@ It is not trying to replace `ky`, Hono, TanStack Query, or an ORM. Slice is the 
 ## Install
 
 ```sh
-npm install @ethandm/slice zod
+npm install @ethandm/api-slice zod
 ```
 
-Install adapters only when you use them:
+Install adapter peer dependencies only when you use those adapters:
 
 ```sh
 npm install @tanstack/react-query
@@ -44,7 +44,7 @@ npm install hono
 ## Resource Definition
 
 ```ts
-import { resource } from "@ethandm/slice";
+import { resource } from "@ethandm/api-slice";
 import { z } from "zod";
 
 const ProjectSchema = z.object({
@@ -85,7 +85,7 @@ projects.keys.detail("project_1");
 Use the built-in `fetch` adapter for a normal JSON API:
 
 ```ts
-import { createFetchHttpClient } from "@ethandm/slice/fetch";
+import { createFetchHttpClient } from "@ethandm/api-slice/fetch";
 
 const http = createFetchHttpClient({
   baseUrl: "https://api.example.com",
@@ -123,7 +123,7 @@ await client.action("archive", {
 Resources can describe themselves for debug panels, docs, and coding agents:
 
 ```ts
-import { describeResource } from "@ethandm/slice";
+import { describeResource } from "@ethandm/api-slice";
 
 describeResource(projects);
 ```
@@ -170,7 +170,7 @@ import {
   createFetchHttpClient,
   createSliceRecorder,
   getSliceSnapshot,
-} from "@ethandm/slice";
+} from "@ethandm/api-slice";
 
 const recorder = createSliceRecorder({ maxEvents: 300 });
 
@@ -291,16 +291,18 @@ const contacts = resource({
 
 Operation overrides can customize method, path, path params, query params, request body, raw response schema, and response selection.
 
-## TanStack Query Hooks
+## Optional TanStack Query Adapter
+
+The core client works without React, React Query, or any cache library. Use this adapter only in apps that already use TanStack Query or intentionally want it for server-state caching.
 
 ```ts
-import { createResourceHooks } from "@ethandm/slice/react-query";
+import { createResourceHooks } from "@ethandm/api-slice/react-query";
 
 export const projectClient = projects.client(http);
 export const projectHooks = createResourceHooks(projects, projectClient);
 ```
 
-Use the generated hooks in components:
+The adapter wraps an existing resource client:
 
 ```ts
 const projectsQuery = projectHooks.useList({ search: "alpha" });
@@ -354,9 +356,9 @@ projectHooks.useUpdate({
 });
 ```
 
-### React Query State Utilities
+### Optional State Utilities
 
-The React Query adapter also exports small state helpers for resource-scoped cache operations and debug views:
+The React Query adapter also exports small state helpers for resource-scoped cache operations and debug views. These helpers are not part of Slice core:
 
 ```ts
 import {
@@ -364,7 +366,7 @@ import {
   clearSliceQueries,
   getSliceQuerySnapshot,
   invalidateResource,
-} from "@ethandm/slice/react-query";
+} from "@ethandm/api-slice/react-query";
 
 await invalidateResource(queryClient, projects);
 clearResourceQueries(queryClient, projects);
@@ -380,7 +382,7 @@ const queryState = getSliceQuerySnapshot(queryClient, [projects]);
 Use stores when you want a centralized catalog of backend operations without forcing those operations into CRUD or Drizzle-specific shapes.
 
 ```ts
-import { command, mutation, query, store } from "@ethandm/slice/store";
+import { command, mutation, query, store } from "@ethandm/api-slice/store";
 import { z } from "zod";
 
 type AppContext = {
@@ -463,7 +465,7 @@ reviewStore.listActions();
 Stores also expose a serializable description:
 
 ```ts
-import { describeStore } from "@ethandm/slice";
+import { describeStore } from "@ethandm/api-slice";
 
 describeStore(reviewStore);
 ```
@@ -481,7 +483,7 @@ This repo includes agent-focused guidance and examples:
 - [examples/workflow-store](./examples/workflow-store): resource + store + Hono route binding.
 - [examples/inconsistent-backend](./examples/inconsistent-backend): adapting a legacy API.
 - [examples/react-native-client](./examples/react-native-client): client-only usage with recorder/auth hooks.
-- [skills/ethandm-slice/SKILL.md](./skills/ethandm-slice/SKILL.md): repo-versioned Codex skill for agents consuming Slice in other repos.
+- [skills/ethandm-api-slice/SKILL.md](./skills/ethandm-api-slice/SKILL.md): repo-versioned Codex skill for agents consuming Slice in other repos.
 
 ## Invalidation Defaults
 
@@ -501,7 +503,7 @@ These return query keys that the TanStack Query adapter invalidates. The default
 ## Hono Routes
 
 ```ts
-import { createHonoResourceRoutes } from "@ethandm/slice/hono";
+import { createHonoResourceRoutes } from "@ethandm/api-slice/hono";
 
 const projectRoutes = createHonoResourceRoutes(projects, {
   list: async ({ input }) => {
@@ -536,7 +538,7 @@ By default, route errors are serialized as the same API error payload the fetch 
 ## API Errors
 
 ```ts
-import { ApiError, normalizeApiError } from "@ethandm/slice";
+import { ApiError, normalizeApiError } from "@ethandm/api-slice";
 
 throw new ApiError({
   code: "VALIDATION_ERROR",

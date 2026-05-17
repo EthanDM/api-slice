@@ -1,11 +1,11 @@
 ---
-name: ethandm-slice
-description: Use when adding, refactoring, or reviewing @ethandm/slice resources, stores, Hono route bindings, React Query hooks, fetch clients, recorder/debug tooling, or incremental adoption in existing TypeScript apps.
+name: ethandm-api-slice
+description: Use when adding, refactoring, or reviewing @ethandm/api-slice resources, stores, Hono route bindings, React Query hooks, fetch clients, recorder/debug tooling, or incremental adoption in existing TypeScript apps.
 ---
 
 # EthanDM Slice
 
-Use this skill when a repo should consume `@ethandm/slice` or when reviewing whether existing Slice usage follows the intended architecture.
+Use this skill when a repo should consume `@ethandm/api-slice` or when reviewing whether existing Slice usage follows the intended architecture.
 
 ## Core Decision
 

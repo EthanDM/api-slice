@@ -2,6 +2,8 @@
 
 `createResourceHooks()` creates TanStack Query hooks for a resource client.
 
+This is an optional adapter. Slice core does not require React or TanStack Query.
+
 ```ts
 const projectClient = projects.client(http);
 const projectHooks = createResourceHooks(projects, projectClient);

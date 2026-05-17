@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-import { createFetchHttpClient } from "@ethandm/slice/fetch";
-import { resource } from "@ethandm/slice";
+import { createFetchHttpClient } from "@ethandm/api-slice/fetch";
+import { resource } from "@ethandm/api-slice";
 
 const RawContactSchema = z.object({
   person_id: z.string(),

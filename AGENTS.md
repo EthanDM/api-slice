@@ -9,7 +9,7 @@ Act like a strong senior TypeScript engineer. Keep Slice small, explicit, and ea
 - Use `createHonoResourceRoutes()` only for conventional Hono CRUD/action HTTP bindings.
 - Use `operations` when a backend route is inconsistent, legacy, or not REST-shaped.
 - Use `createFetchHttpClient()` for JSON transport, auth callbacks, logging, and request recording.
-- Use React Query helpers only in `@ethandm/slice/react-query`.
+- Use React Query helpers only in `@ethandm/api-slice/react-query`.
 
 ## Do Not Add To Core
 

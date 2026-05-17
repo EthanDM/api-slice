@@ -23,20 +23,22 @@ Required:
 
 - `zod`: `^3.25.0`
 
-Optional:
+Optional adapter peers:
 
 - `hono`: `^4.0.0`
 - `@tanstack/react-query`: `^5.0.0`
 - `react`: `>=18.0.0 <20.0.0`
 
+Core resource clients do not require Hono, React, or TanStack Query. Those packages are only needed when importing their adapter subpaths.
+
 ## Package Entrypoints
 
 ```ts
-import { resource, store } from "@ethandm/slice";
-import { resource } from "@ethandm/slice/core";
-import { createFetchHttpClient } from "@ethandm/slice/fetch";
-import { createHonoResourceRoutes } from "@ethandm/slice/hono";
-import { createResourceHooks } from "@ethandm/slice/react-query";
-import { createSliceRecorder } from "@ethandm/slice/recorder";
-import { store } from "@ethandm/slice/store";
+import { resource, store } from "@ethandm/api-slice";
+import { resource } from "@ethandm/api-slice/core";
+import { createFetchHttpClient } from "@ethandm/api-slice/fetch";
+import { createHonoResourceRoutes } from "@ethandm/api-slice/hono";
+import { createResourceHooks } from "@ethandm/api-slice/react-query";
+import { createSliceRecorder } from "@ethandm/api-slice/recorder";
+import { store } from "@ethandm/api-slice/store";
 ```

@@ -16,7 +16,7 @@ Use resources for app-facing API contracts:
 - CRUD client calls
 - custom API actions
 - inconsistent backend route mappings
-- React Query invalidation defaults
+- optional React Query invalidation defaults
 
 Do not put DB queries, service workflows, auth policy, or provider SDK calls in a resource.
 

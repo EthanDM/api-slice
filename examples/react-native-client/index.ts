@@ -5,7 +5,7 @@ import {
   createSliceRecorder,
   getSliceSnapshot,
   resource,
-} from "@ethandm/slice";
+} from "@ethandm/api-slice";
 
 const ProjectSchema = z.object({
   id: z.string(),

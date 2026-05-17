@@ -5,13 +5,13 @@
     "rootDir": ".",
     "noEmit": true,
     "paths": {
-      "@ethandm/slice": ["./src/index.ts"],
-      "@ethandm/slice/core": ["./src/core.ts"],
-      "@ethandm/slice/fetch": ["./src/fetch.ts"],
-      "@ethandm/slice/hono": ["./src/hono.ts"],
-      "@ethandm/slice/react-query": ["./src/react-query.ts"],
-      "@ethandm/slice/recorder": ["./src/recorder.ts"],
-      "@ethandm/slice/store": ["./src/store.ts"]
+      "@ethandm/api-slice": ["./src/index.ts"],
+      "@ethandm/api-slice/core": ["./src/core.ts"],
+      "@ethandm/api-slice/fetch": ["./src/fetch.ts"],
+      "@ethandm/api-slice/hono": ["./src/hono.ts"],
+      "@ethandm/api-slice/react-query": ["./src/react-query.ts"],
+      "@ethandm/api-slice/recorder": ["./src/recorder.ts"],
+      "@ethandm/api-slice/store": ["./src/store.ts"]
     }
   },
   "include": ["examples/**/*.ts", "src/**/*.ts"],
