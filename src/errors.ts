@@ -1,3 +1,4 @@
+/** Stable machine-readable categories shared by server payloads and clients. */
 export type ApiErrorCode =
   | "BAD_REQUEST"
   | "UNAUTHORIZED"
@@ -8,21 +9,33 @@ export type ApiErrorCode =
   | "INTERNAL_ERROR"
   | "UNKNOWN_ERROR";
 
+/** JSON-safe error envelope that can cross HTTP boundaries. */
 export type ApiErrorPayload = {
+  /** Stable category that callers can branch on without parsing message text. */
   code: ApiErrorCode;
+  /** Human-readable fallback message suitable for logs or simple UI. */
   message: string;
+  /** HTTP-style status used by fetch and server adapters. */
   status: number;
+  /** Optional structured validation/backend details preserved for advanced callers. */
   details?: unknown;
 };
 
+/** Constructor input for errors created inside adapters or server handlers. */
 export type ApiErrorInput = {
+  /** Optional category; inferred from status when omitted. */
   code?: ApiErrorCode;
+  /** Optional message; falls back to the code's default message when omitted. */
   message?: string;
+  /** Optional HTTP-style status; inferred from code when omitted. */
   status?: number;
+  /** Optional structured payload for validation errors or backend diagnostics. */
   details?: unknown;
+  /** Original thrown value retained on the Error instance but omitted from JSON. */
   cause?: unknown;
 };
 
+/** Error payload plus the original thrown value when normalization preserves it. */
 export type NormalizedApiError = ApiErrorPayload & {
   cause?: unknown;
 };
@@ -49,11 +62,20 @@ const statusCodes: Partial<Record<ApiErrorCode, number>> = {
   UNKNOWN_ERROR: 500,
 };
 
+/**
+ * Error type used when Slice can represent a failure as an HTTP-like API
+ * problem. `details` intentionally remains unknown so validation libraries and
+ * backend envelopes can keep their own structured payloads.
+ */
 export class ApiError extends Error implements ApiErrorPayload {
+  /** Stable category inferred from status when callers do not provide one. */
   readonly code: ApiErrorCode;
+  /** HTTP-style status inferred from code when callers do not provide one. */
   readonly status: number;
+  /** Structured backend or validation details; never interpreted by ApiError itself. */
   readonly details?: unknown;
 
+  /** Creates an API error, inferring missing code/status defaults when possible. */
   constructor(input: ApiErrorInput = {}) {
     const code = input.code ?? codeFromStatus(input.status) ?? "UNKNOWN_ERROR";
     super(input.message ?? defaultMessages[code], { cause: input.cause });
@@ -63,6 +85,7 @@ export class ApiError extends Error implements ApiErrorPayload {
     this.details = input.details;
   }
 
+  /** Serializes the error into the payload shape understood by Slice clients. */
   toJSON(): ApiErrorPayload {
     return {
       code: this.code,
@@ -73,14 +96,21 @@ export class ApiError extends Error implements ApiErrorPayload {
   }
 }
 
+/** Convenience factory for call sites that prefer functions over `new`. */
 export function createApiError(input: ApiErrorInput = {}): ApiError {
   return new ApiError(input);
 }
 
+/** Narrows errors created by Slice without treating arbitrary envelopes as trusted. */
 export function isApiError(error: unknown): error is ApiError {
   return error instanceof ApiError;
 }
 
+/**
+ * Converts any thrown value into a displayable API error shape. Unknown
+ * non-Error values intentionally collapse to a generic message to avoid leaking
+ * arbitrary payloads into user-facing UI.
+ */
 export function normalizeApiError(error: unknown): NormalizedApiError {
   if (error instanceof ApiError) {
     return {
@@ -109,10 +139,15 @@ export function normalizeApiError(error: unknown): NormalizedApiError {
   };
 }
 
+/** Returns the safest user-facing message Slice can derive from a thrown value. */
 export function getApiErrorMessage(error: unknown): string {
   return normalizeApiError(error).message;
 }
 
+/**
+ * Drops non-serializable `cause` data so server adapters can send normalized
+ * failures over HTTP.
+ */
 export function toApiErrorPayload(error: unknown): ApiErrorPayload {
   const normalized = normalizeApiError(error);
 
@@ -124,6 +159,7 @@ export function toApiErrorPayload(error: unknown): ApiErrorPayload {
   };
 }
 
+/** Maps common HTTP statuses to stable Slice error codes. */
 function codeFromStatus(status?: number): ApiErrorCode | undefined {
   switch (status) {
     case 400:
@@ -143,6 +179,7 @@ function codeFromStatus(status?: number): ApiErrorCode | undefined {
   }
 }
 
+/** Accepts Error-like objects from runtimes or test doubles without trusting shape fully. */
 function isErrorLike(error: unknown): error is Error {
   return (
     typeof error === "object" &&

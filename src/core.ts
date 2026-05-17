@@ -1,3 +1,4 @@
+/** Dependency-light entrypoint for schemas, resources, and shared API errors. */
 export {
   ApiError,
   createApiError,

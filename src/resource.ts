@@ -21,6 +21,22 @@ import type {
   RuntimeResourceAction,
 } from "./resource-types.js";
 
+/**
+ * Defines the app-facing contract for one API resource and returns the client
+ * helpers derived from that contract. The resource keeps backend transport
+ * quirks behind `operations` and `actions`, so consumers work with the parsed
+ * entity schema instead of raw API envelopes.
+ *
+ * @throws When a configured operation/action is missing a required schema,
+ * path parameter, or returns data that fails its Zod output contract.
+ *
+ * @example
+ * const projects = resource({
+ *   name: "projects",
+ *   path: "/projects",
+ *   schemas: { entity: ProjectSchema, createInput: CreateProjectSchema },
+ * });
+ */
 export function resource<
   EntitySchema extends z.ZodTypeAny,
   ListInputSchema extends z.ZodTypeAny | undefined = undefined,

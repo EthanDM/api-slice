@@ -19,11 +19,16 @@ import type {
 type QueryKey = readonly unknown[];
 type QueryKeys = readonly QueryKey[];
 
+/** Query options callers may override without breaking Slice-owned keys/functions. */
 export type ResourceQueryOptions<Data, Selected = Data> = Omit<
   UseQueryOptions<Data, Error, Selected, QueryKey>,
   "queryKey" | "queryFn"
 >;
 
+/**
+ * Mutation options that preserve TanStack Query behavior while letting Slice own
+ * the mutation function and default invalidation policy.
+ */
 export type ResourceMutationOptions<Data, Variables, Context = unknown> = Omit<
   UseMutationOptions<Data, Error, Variables, Context>,
   "mutationFn" | "onSuccess"
@@ -32,15 +37,24 @@ export type ResourceMutationOptions<Data, Variables, Context = unknown> = Omit<
   onSuccess?: UseMutationOptions<Data, Error, Variables, Context>["onSuccess"];
 };
 
+/** Groups id and patch payload so update invalidation can target the changed entity. */
 export type UpdateVariables<UpdateInput> = {
+  /** Entity id used for both the request path and default detail invalidation. */
   id: Id;
+  /** Already typed update payload passed through to the resource client. */
   input: UpdateInput;
 };
 
+/** Keeps delete variables object-shaped so mutation callbacks receive stable metadata. */
 export type DeleteVariables = {
+  /** Entity id used for both the request path and default detail invalidation. */
   id: Id;
 };
 
+/**
+ * Hook surface generated for one resource. Query keys and invalidation remain
+ * resource-derived so screens do not need to recreate cache conventions.
+ */
 export type ResourceHooks<
   Entity,
   ListInput,
@@ -48,23 +62,29 @@ export type ResourceHooks<
   UpdateInput,
   Actions extends RuntimeResourceActionMap = {},
 > = {
+  /** Reads a list using the resource list key, including any filter input. */
   useList: <Selected = Entity[]>(
     input?: ListInput,
     options?: ResourceQueryOptions<Entity[], Selected>,
   ) => UseQueryResult<Selected, Error>;
+  /** Reads one entity using the resource detail key. */
   useDetail: <Selected = Entity>(
     id: Id,
     options?: ResourceQueryOptions<Entity, Selected>,
   ) => UseQueryResult<Selected, Error>;
+  /** Creates an entity and invalidates collection-level defaults unless overridden. */
   useCreate: (
     options?: ResourceMutationOptions<Entity, CreateInput>,
   ) => UseMutationResult<Entity, Error, CreateInput>;
+  /** Updates an entity and invalidates detail plus collection defaults unless overridden. */
   useUpdate: (
     options?: ResourceMutationOptions<Entity, UpdateVariables<UpdateInput>>,
   ) => UseMutationResult<Entity, Error, UpdateVariables<UpdateInput>>;
+  /** Deletes an entity and invalidates detail plus collection defaults unless overridden. */
   useDelete: (
     options?: ResourceMutationOptions<void, DeleteVariables>,
   ) => UseMutationResult<void, Error, DeleteVariables>;
+  /** Executes a named custom action using that action's inferred request/output contract. */
   useAction: <Name extends keyof Actions & string>(
     name: Name,
     options?: ResourceMutationOptions<
@@ -78,6 +98,11 @@ export type ResourceHooks<
   >;
 };
 
+/**
+ * Creates React Query hooks for an already-configured resource client. The
+ * adapter does not create its own QueryClient; it uses the nearest provider so
+ * web and React Native apps keep normal TanStack Query ownership.
+ */
 export function createResourceHooks<
   Entity,
   ListInput,
@@ -172,6 +197,7 @@ export function createResourceHooks<
   };
 }
 
+/** Invalidates each generated query key using TanStack Query's public API. */
 export async function invalidateResourceQueries(
   queryClient: QueryClient,
   keys: QueryKeys,
@@ -181,6 +207,11 @@ export async function invalidateResourceQueries(
   );
 }
 
+/**
+ * Resolves mutation invalidation policy. `false` means the caller takes full
+ * ownership; arrays replace defaults; functions can derive keys from mutation
+ * results.
+ */
 function resolveInvalidation<Data, Variables>(
   invalidates:
     | ResourceMutationOptions<Data, Variables>["invalidates"]

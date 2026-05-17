@@ -1,3 +1,4 @@
+/** Full package entrypoint that includes optional adapters. */
 export * from "./core.js";
 export { createFetchHttpClient } from "./fetch.js";
 export type {

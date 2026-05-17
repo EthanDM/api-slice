@@ -1,3 +1,8 @@
+/**
+ * Hono adapter for resources whose server routes follow Slice's conventional
+ * CRUD/action shape. Business logic stays in handlers; this module owns the
+ * HTTP binding around those handlers.
+ */
 import { Hono, type Context } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 
@@ -11,33 +16,47 @@ import type {
   RuntimeResourceActionMap,
 } from "./resource.js";
 
+/** Context passed to Hono resource handlers after Slice has parsed route input. */
 export type HonoResourceHandlerContext<ListInput = unknown> = {
+  /** Original Hono context for auth/session state or response escape hatches. */
   context: Context;
+  /** Path id for detail/update/delete and id-based action handlers. */
   id?: Id;
+  /** Reserved for future list metadata; list handlers currently receive `input`. */
   listInput?: ListInput;
 };
 
+/**
+ * CRUD handlers for Hono routes generated from a resource. Handlers own business
+ * logic; Slice owns request parsing, output validation, and default status codes.
+ */
 export type HonoResourceHandlers<Entity, ListInput, CreateInput, UpdateInput> = {
+  /** Handles collection reads after query params are parsed as list input. */
   list: (
     args: HonoResourceHandlerContext<ListInput> & { input: ListInput },
   ) => Promise<Entity[]> | Entity[];
+  /** Handles entity reads using the `:id` path parameter. */
   detail: (
     args: HonoResourceHandlerContext<ListInput> & { id: Id },
   ) => Promise<Entity> | Entity;
+  /** Handles creation after the request body is parsed as create input. */
   create: (
     args: HonoResourceHandlerContext<ListInput> & { input: CreateInput },
   ) => Promise<Entity> | Entity;
+  /** Handles updates after `:id` and update input have been parsed. */
   update: (
     args: HonoResourceHandlerContext<ListInput> & {
       id: Id;
       input: UpdateInput;
     },
   ) => Promise<Entity> | Entity;
+  /** Handles deletion and should return no response body. */
   delete: (
     args: HonoResourceHandlerContext<ListInput> & { id: Id },
   ) => Promise<void> | void;
 };
 
+/** Custom action handlers keyed by the resource action name. */
 export type HonoResourceActionHandlers<Actions extends RuntimeResourceActionMap> = {
   [Name in keyof Actions & string]: (
     args: HonoResourceHandlerContext & {
@@ -47,6 +66,7 @@ export type HonoResourceActionHandlers<Actions extends RuntimeResourceActionMap>
   ) => Promise<ResourceActionOutput<Actions[Name]>> | ResourceActionOutput<Actions[Name]>;
 };
 
+/** Full handler map accepted by the Hono adapter, including optional error ownership. */
 export type HonoResourceRouteHandlers<
   Entity,
   ListInput,
@@ -54,10 +74,20 @@ export type HonoResourceRouteHandlers<
   UpdateInput,
   Actions extends RuntimeResourceActionMap,
 > = HonoResourceHandlers<Entity, ListInput, CreateInput, UpdateInput> & {
+  /** Optional handlers for custom resource actions; missing declared actions throw at runtime. */
   actions?: Partial<HonoResourceActionHandlers<Actions>>;
+  /** Disable only when a parent Hono app already serializes errors consistently. */
   handleErrors?: boolean;
 };
 
+/**
+ * Builds conventional CRUD and custom action routes for a resource. This is
+ * meant for APIs you control; client-side `operations` remain the escape hatch
+ * for consuming inconsistent external backends.
+ *
+ * @throws When a request body fails validation, a handler returns invalid data,
+ * or a declared action is missing a handler.
+ */
 export function createHonoResourceRoutes<
   Entity,
   ListInput,
@@ -156,6 +186,7 @@ export function createHonoResourceRoutes<
   return app;
 }
 
+/** Parses list filters from query params, or returns undefined for unfiltered lists. */
 function parseListInput<Entity, ListInput, CreateInput, UpdateInput>(
   resource: Resource<Entity, ListInput, CreateInput, UpdateInput>,
   context: Context,
@@ -167,6 +198,7 @@ function parseListInput<Entity, ListInput, CreateInput, UpdateInput>(
   return resource.schemas.listInput.parse(context.req.query());
 }
 
+/** Reads JSON only when the request advertises a JSON content type. */
 async function readJson(context: Context): Promise<unknown> {
   const contentType = context.req.header("content-type");
 
@@ -177,6 +209,11 @@ async function readJson(context: Context): Promise<unknown> {
   return context.req.json();
 }
 
+/**
+ * Enforces that mutating CRUD routes have schemas before handlers run.
+ *
+ * @throws When create/update routes are used without their input schema.
+ */
 function requireInput<Input>(
   input: Input | undefined,
   operation: "create" | "update",
@@ -188,6 +225,7 @@ function requireInput<Input>(
   return input;
 }
 
+/** Parses a custom action request from path params plus query/body input. */
 async function parseActionRequest(
   action: RuntimeResourceAction,
   context: Context,
@@ -202,6 +240,7 @@ async function parseActionRequest(
   } as ResourceActionRequest<RuntimeResourceAction>;
 }
 
+/** Preserves undefined for actions without input schemas. */
 function parseOptionalActionInput(
   action: RuntimeResourceAction,
   input: unknown,
