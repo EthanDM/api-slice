@@ -1,6 +1,12 @@
 import { z } from "zod";
 
-import { command, query, resource, store } from "@ethandm/slice";
+import {
+  command,
+  createApiError,
+  query,
+  resource,
+  store,
+} from "@ethandm/slice";
 import { createFetchHttpClient } from "@ethandm/slice/fetch";
 import { createHonoResourceRoutes } from "@ethandm/slice/hono";
 
@@ -66,7 +72,7 @@ export const reviewStore = store({
     queue: query({
       input: ReviewQueueInputSchema,
       output: z.array(ReviewQueueItemSchema),
-      run: async ({ ctx, input }: { ctx: AppContext; input: z.output<typeof ReviewQueueInputSchema> }) => {
+      run: async ({ ctx, input }: { ctx: AppContext; input: z.input<typeof ReviewQueueInputSchema> }) => {
         return getReviewQueue(ctx.db, {
           assignedUserId: input.scope === "mine" ? ctx.user.id : null,
           includeClosed: input.includeClosed,
@@ -99,16 +105,32 @@ export function createReviewRoutes(getUser: (context: unknown) => User) {
         input,
       }),
     detail: () => {
-      throw new Error("Review queue items are list-only projections");
+      throw createApiError({
+        status: 405,
+        code: "BAD_REQUEST",
+        message: "Review queue items are list-only projections",
+      });
     },
     create: () => {
-      throw new Error("Review queue items are derived from existing records");
+      throw createApiError({
+        status: 405,
+        code: "BAD_REQUEST",
+        message: "Review queue items are derived from existing records",
+      });
     },
     update: () => {
-      throw new Error("Review queue items are derived from existing records");
+      throw createApiError({
+        status: 405,
+        code: "BAD_REQUEST",
+        message: "Review queue items are derived from existing records",
+      });
     },
     delete: () => {
-      throw new Error("Review queue items are derived from existing records");
+      throw createApiError({
+        status: 405,
+        code: "BAD_REQUEST",
+        message: "Review queue items are derived from existing records",
+      });
     },
     actions: {
       sendReminder: ({ context, id, request }) =>

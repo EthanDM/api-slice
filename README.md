@@ -4,6 +4,30 @@
 
 It is not trying to replace `ky`, Hono, TanStack Query, or an ORM. Slice is the boring glue layer above those tools.
 
+## Status
+
+`@ethandm/slice` is pre-1.0. The public API is intended to be usable, but breaking changes may happen before `1.0.0`.
+
+## Choose Your Path
+
+- Client-only or React Native: start with `resource()` and `createFetchHttpClient()`.
+- Hono backend: add `createHonoResourceRoutes()`.
+- Service-layer/backend workflow: add `store()`, `query()`, `mutation()`, and `command()`.
+- TanStack Query app: add `createResourceHooks()`.
+- Inconsistent backend API: use `operations`.
+
+## Docs
+
+- [Adoption guide](./docs/adoption-guide.md)
+- [Compatibility](./docs/compatibility.md)
+- [Resource API](./docs/api/resource.md)
+- [Store API](./docs/api/store.md)
+- [Fetch adapter](./docs/api/fetch.md)
+- [Hono adapter](./docs/api/hono.md)
+- [React Query adapter](./docs/api/react-query.md)
+- [Recorder API](./docs/api/recorder.md)
+- [Release guide](./docs/release.md)
+
 ## Install
 
 ```sh
@@ -451,6 +475,7 @@ The store module is not a database adapter. It is a typed action catalog for ser
 This repo includes agent-focused guidance and examples:
 
 - [AGENTS.md](./AGENTS.md): hard architectural boundaries and preferred shapes.
+- [docs/adoption-guide.md](./docs/adoption-guide.md): incremental adoption workflow for existing repos.
 - [docs/conventions.md](./docs/conventions.md): resource/store/route/client conventions.
 - [docs/agent-recipes.md](./docs/agent-recipes.md): copyable implementation recipes.
 - [examples/workflow-store](./examples/workflow-store): resource + store + Hono route binding.

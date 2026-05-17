@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "rootDir": ".",
+    "noEmit": true,
+    "paths": {
+      "@ethandm/slice": ["./src/index.ts"],
+      "@ethandm/slice/core": ["./src/core.ts"],
+      "@ethandm/slice/fetch": ["./src/fetch.ts"],
+      "@ethandm/slice/hono": ["./src/hono.ts"],
+      "@ethandm/slice/react-query": ["./src/react-query.ts"],
+      "@ethandm/slice/recorder": ["./src/recorder.ts"],
+      "@ethandm/slice/store": ["./src/store.ts"]
+    }
+  },
+  "include": ["examples/**/*.ts", "src/**/*.ts"],
+  "exclude": ["test/**/*.ts", "dist"]
+}
