@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
-import { command, mutation, query, store } from "../src/index.js";
+import { command, describeStore, mutation, query, store } from "../src/index.js";
 
 type TestContext = {
   db: {
@@ -162,6 +162,10 @@ describe("store", () => {
       name: "create",
       kind: "mutation",
     });
+    expect(describeStore(projectStore)).toEqual({
+      name: "projects",
+      actions: projectStore.listActions(),
+    });
   });
 
   it("throws for unknown generic action names", async () => {
@@ -177,6 +181,8 @@ describe("store", () => {
 
     await expect(
       projectStore.run("missing" as "list", { ctx: {}, input: undefined }),
-    ).rejects.toThrow("Unknown store action: missing");
+    ).rejects.toThrow(
+      'Unknown store action "missing" on store "projects". Available actions: list.',
+    );
   });
 });

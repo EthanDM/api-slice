@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
-import { resource, type HttpClient } from "../src/index.js";
+import { describeResource, resource, type HttpClient } from "../src/index.js";
 
 const ProjectSchema = z.object({
   id: z.string(),
@@ -82,6 +82,38 @@ describe("resource", () => {
       ["projects", "list", undefined],
       ["projects"],
     ]);
+  });
+
+  it("describes resource contracts for tooling", () => {
+    expect(describeResource(projectsWithActions)).toEqual({
+      name: "projects",
+      path: "/projects",
+      schemas: {
+        entity: true,
+        listInput: true,
+        createInput: true,
+        updateInput: true,
+      },
+      operations: [],
+      actions: [
+        {
+          name: "archive",
+          method: "POST",
+          path: "/:id/archive",
+          hasInput: true,
+          hasOutput: true,
+          hasInvalidation: false,
+        },
+        {
+          name: "stats",
+          method: "GET",
+          path: "/stats",
+          hasInput: false,
+          hasOutput: true,
+          hasInvalidation: true,
+        },
+      ],
+    });
   });
 
   it("builds CRUD client requests", async () => {
@@ -197,6 +229,21 @@ describe("resource", () => {
       ["projects"],
     ]);
     expect(projectsWithActions.invalidates.action("stats")).toEqual([]);
+  });
+
+  it("throws actionable errors for unknown custom actions", async () => {
+    const client = projectsWithActions.client(
+      async <Output>() => undefined as Output,
+    );
+
+    await expect(
+      client.action("missing" as "archive", {
+        id: "project_1",
+        input: { reason: "Done" },
+      }),
+    ).rejects.toThrow(
+      'Unknown resource action "missing" on resource "projects". Available actions: archive, stats.',
+    );
   });
 
   it("supports inconsistent backend operation mappings", async () => {

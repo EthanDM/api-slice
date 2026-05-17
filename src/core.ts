@@ -14,12 +14,14 @@ export type {
   NormalizedApiError,
 } from "./errors.js";
 export { resource } from "./resource.js";
+export { describeResource } from "./resource.js";
 export {
   createSliceRecorder,
   getSliceSnapshot,
 } from "./recorder.js";
 export {
   command,
+  describeStore,
   mutation,
   query,
   store,
@@ -30,6 +32,7 @@ export type {
   HttpRequestMeta,
   Id,
   Resource,
+  ResourceActionDescription,
   ResourceActionConfig,
   ResourceActionMap,
   ResourceActionOutput,
@@ -37,11 +40,13 @@ export type {
   ResourceActionsClient,
   ResourceClient,
   ResourceConfig,
+  ResourceDescription,
   ResourceInvalidation,
   ResourceKeys,
   ResourceMutationName,
   ResourceOperationArgs,
   ResourceOperationConfig,
+  ResourceOperationName,
   ResourceOperations,
   ResourceSchemas,
 } from "./resource.js";
@@ -65,6 +70,7 @@ export type {
   StoreActionOutput,
   StoreActionRunArgs,
   StoreConfig,
+  StoreDescription,
   StoreRunArgs,
   StoreRunOutput,
 } from "./store.js";

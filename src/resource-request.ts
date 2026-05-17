@@ -21,11 +21,21 @@ import type {
 export function getAction<
   Actions extends ResourceActionMap,
   Name extends keyof Actions & string,
->(actions: Actions | undefined, name: Name): Actions[Name] {
+>(
+  actions: Actions | undefined,
+  name: Name,
+  resourceName?: string,
+): Actions[Name] {
   const action = actions?.[name];
 
   if (!action) {
-    throw new Error(`Unknown resource action: ${name}`);
+    const available = Object.keys(actions ?? {}).join(", ") || "(none)";
+
+    throw new Error(
+      resourceName
+        ? `Unknown resource action "${name}" on resource "${resourceName}". Available actions: ${available}.`
+        : `Unknown resource action "${name}". Available actions: ${available}.`,
+    );
   }
 
   return action;

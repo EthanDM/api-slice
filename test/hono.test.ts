@@ -165,4 +165,26 @@ describe("createHonoResourceRoutes", () => {
       }),
     );
   });
+
+  it("returns actionable errors when a custom action handler is missing", async () => {
+    const app = createHonoResourceRoutes(projects, {
+      list: vi.fn(),
+      detail: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    });
+
+    const response = await app.request("/project_1/archive", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ reason: "Archived" }),
+    });
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toMatchObject({
+      message:
+        'Missing Hono handler for resource action "archive" on resource "projects". Add handlers.actions.archive to createHonoResourceRoutes(projects, ...).',
+    });
+  });
 });

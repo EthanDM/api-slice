@@ -13,6 +13,7 @@ import type {
   InferSchemaOutput,
   OptionalSchemaInput,
   Resource,
+  ResourceDescription,
   ResourceActionMap,
   ResourceActionOutput,
   ResourceConfig,
@@ -68,6 +69,25 @@ export function resource<
     list: (input) => [config.name, "list", input] as const,
     detail: (id) => [config.name, "detail", id] as const,
   };
+  const describe = (): ResourceDescription => ({
+    name: config.name,
+    path: config.path,
+    schemas: {
+      entity: true,
+      listInput: Boolean(config.schemas.listInput),
+      createInput: Boolean(config.schemas.createInput),
+      updateInput: Boolean(config.schemas.updateInput),
+    },
+    operations: getConfiguredOperations(config.operations),
+    actions: Object.entries(config.actions ?? {}).map(([name, action]) => ({
+      name,
+      method: action.method,
+      path: action.path,
+      hasInput: Boolean(action.input),
+      hasOutput: Boolean(action.output),
+      hasInvalidation: Boolean(action.invalidates),
+    })),
+  });
 
   return {
     name: config.name,
@@ -86,11 +106,16 @@ export function resource<
       update: (id, input) => [keys.detail(id), keys.list(input), keys.all],
       delete: (id, input) => [keys.detail(id), keys.list(input), keys.all],
       action: (name) => {
-        const action = getAction(config.actions, name as keyof Actions & string);
+        const action = getAction(
+          config.actions,
+          name as keyof Actions & string,
+          config.name,
+        );
 
         return action.invalidates ?? [keys.all];
       },
     },
+    describe,
     client: (http) => ({
       list: async (input) => {
         const operation = config.operations?.list;
@@ -189,7 +214,11 @@ export function resource<
         });
       },
       action: async (name, request) => {
-        const action = getAction(config.actions, name) as RuntimeResourceAction;
+        const action = getAction(
+          config.actions,
+          name,
+          config.name,
+        ) as RuntimeResourceAction;
         const parsedInput = parseOptional(action.input, request.input);
         const output = await http<unknown>({
           method: action.method,
@@ -214,6 +243,35 @@ export function resource<
   };
 }
 
+/**
+ * Returns a serializable resource summary without requiring callers to know
+ * whether the resource stores its metadata directly or behind a closure.
+ */
+export function describeResource(
+  resource: { describe: () => ResourceDescription },
+): ResourceDescription {
+  return resource.describe();
+}
+
+/** Lists CRUD operations with custom transport mappings for diagnostics. */
+function getConfiguredOperations(
+  operations: ResourceConfig<
+    z.ZodTypeAny,
+    z.ZodTypeAny | undefined,
+    z.ZodTypeAny | undefined,
+    z.ZodTypeAny | undefined,
+    ResourceActionMap
+  >["operations"],
+): ResourceDescription["operations"] {
+  if (!operations) {
+    return [];
+  }
+
+  return (["list", "detail", "create", "update", "delete"] as const).filter(
+    (operation) => Boolean(operations[operation]),
+  );
+}
+
 export type {
   HttpClient,
   HttpMethod,
@@ -221,17 +279,20 @@ export type {
   Id,
   Resource,
   ResourceActionConfig,
+  ResourceActionDescription,
   ResourceActionMap,
   ResourceActionOutput,
   ResourceActionRequest,
   ResourceActionsClient,
   ResourceClient,
   ResourceConfig,
+  ResourceDescription,
   ResourceInvalidation,
   ResourceKeys,
   ResourceMutationName,
   ResourceOperationArgs,
   ResourceOperationConfig,
+  ResourceOperationName,
   ResourceOperations,
   ResourceSchemas,
   RuntimeResourceAction,

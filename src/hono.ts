@@ -132,7 +132,7 @@ export function createHonoResourceRoutes<
     const input = resource.schemas.createInput?.parse(await readJson(context));
     const output = await handlers.create({
       context,
-      input: requireInput(input, "create"),
+      input: requireInput(resource.name, input, "create"),
     });
 
     return context.json(resource.schemas.entity.parse(output), 201);
@@ -144,7 +144,7 @@ export function createHonoResourceRoutes<
     const output = await handlers.update({
       context,
       id,
-      input: requireInput(input, "update"),
+      input: requireInput(resource.name, input, "update"),
     });
 
     return context.json(resource.schemas.entity.parse(output));
@@ -165,7 +165,10 @@ export function createHonoResourceRoutes<
       const handler = handlers.actions?.[name];
 
       if (!handler) {
-        throw new Error(`Missing Hono handler for resource action: ${name}`);
+        throw new Error(
+          `Missing Hono handler for resource action "${name}" on resource "${resource.name}". ` +
+            `Add handlers.actions.${name} to createHonoResourceRoutes(${resource.name}, ...).`,
+        );
       }
 
       const request = await parseActionRequest(action, context);
@@ -215,11 +218,15 @@ async function readJson(context: Context): Promise<unknown> {
  * @throws When create/update routes are used without their input schema.
  */
 function requireInput<Input>(
+  resourceName: string,
   input: Input | undefined,
   operation: "create" | "update",
 ): Input {
   if (input === undefined) {
-    throw new Error(`Resource ${operation} route requires an input schema`);
+    throw new Error(
+      `Resource "${resourceName}" ${operation} route requires an input schema. ` +
+        `Add schemas.${operation}Input to resource({ name: "${resourceName}", ... }).`,
+    );
   }
 
   return input;

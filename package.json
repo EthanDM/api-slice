@@ -1,7 +1,12 @@
 {
-  "name": "@cafecito/slice",
+  "name": "@ethandm/slice",
   "version": "0.0.0",
   "private": true,
+  "author": "Ethan Millstein <me@ethandm.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/EthanDM/slice.git"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

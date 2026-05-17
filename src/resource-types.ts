@@ -107,6 +107,41 @@ export type ResourceOperations<ListInput, CreateInput, UpdateInput, Entity> = {
   delete?: ResourceOperationConfig<undefined, void>;
 };
 
+/** Serializable view of one resource action for tools and agent workflows. */
+export type ResourceActionDescription = {
+  /** Action key from the resource definition. */
+  name: string;
+  /** HTTP verb used by the action. */
+  method: HttpMethod;
+  /** Action path relative to the resource base path. */
+  path: string;
+  /** Whether this action validates caller input. */
+  hasInput: boolean;
+  /** Whether this action validates a meaningful return value. */
+  hasOutput: boolean;
+  /** Whether this action declares custom invalidation keys. */
+  hasInvalidation: boolean;
+};
+
+/** Serializable resource summary for docs, debug panels, and coding agents. */
+export type ResourceDescription = {
+  /** Resource name used for cache keys and diagnostics. */
+  name: string;
+  /** Default collection path used by generated operations. */
+  path: string;
+  /** Declared schema presence without exposing schema implementation details. */
+  schemas: {
+    entity: true;
+    listInput: boolean;
+    createInput: boolean;
+    updateInput: boolean;
+  };
+  /** CRUD operations whose transport behavior was overridden. */
+  operations: ResourceOperationName[];
+  /** Declared custom actions with method/path and schema presence. */
+  actions: ResourceActionDescription[];
+};
+
 /**
  * Optional diagnostic metadata attached by resource clients. Transport
  * adapters must not depend on this for request correctness; it exists so
@@ -174,6 +209,12 @@ export type ResourceKeys<ListInput = unknown> = {
 
 /** CRUD mutation names that have built-in invalidation defaults. */
 export type ResourceMutationName = "create" | "update" | "delete";
+
+/** CRUD operation names that can be generated or transport-overridden. */
+export type ResourceOperationName =
+  | "list"
+  | "detail"
+  | ResourceMutationName;
 
 /** Query-key invalidation policy derived from a resource definition. */
 export type ResourceInvalidation<ListInput = unknown> = {
@@ -270,6 +311,8 @@ export type Resource<
   keys: ResourceKeys<ListInput>;
   /** Invalidation defaults derived from CRUD and action definitions. */
   invalidates: ResourceInvalidation<ListInput>;
+  /** Returns a serializable contract summary for tooling and agent workflows. */
+  describe: () => ResourceDescription;
   /** Builds a resource client around whichever transport adapter the app provides. */
   client: (http: HttpClient) => ResourceClient<
     Entity,

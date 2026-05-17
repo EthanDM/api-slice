@@ -88,6 +88,14 @@ export type StoreActionMetadata = {
   description?: string;
 };
 
+/** Serializable store summary for docs, debug panels, and coding agents. */
+export type StoreDescription = {
+  /** Stable catalog name, usually matching the backend domain area. */
+  name: string;
+  /** Cataloged backend actions without implementation functions. */
+  actions: StoreActionMetadata[];
+};
+
 /** Input arguments inferred for one store action. */
 export type StoreRunArgs<
   Action extends StoreAction,
@@ -118,6 +126,8 @@ export type Store<
   getAction: <ActionName extends keyof Actions & string>(
     name: ActionName,
   ) => StoreActionMetadata;
+  /** Returns a serializable catalog summary for tooling and agent workflows. */
+  describe: () => StoreDescription;
   /** Executes an action by name, useful for generic tooling and route binders. */
   run: <ActionName extends keyof Actions & string>(
     name: ActionName,
@@ -218,16 +228,26 @@ export function store<
       const action = metadata.find((entry) => entry.name === name);
 
       if (!action) {
-        throw new Error(`Unknown store action: ${String(name)}`);
+        throw new Error(
+          `Unknown store action "${String(name)}" on store "${config.name}". ` +
+            `Available actions: ${metadata.map((entry) => entry.name).join(", ") || "(none)"}.`,
+        );
       }
 
       return action;
     },
+    describe: () => ({
+      name: config.name,
+      actions: [...metadata],
+    }),
     run: async (name, args) => {
       const action = config.actions[name];
 
       if (!action) {
-        throw new Error(`Unknown store action: ${String(name)}`);
+        throw new Error(
+          `Unknown store action "${String(name)}" on store "${config.name}". ` +
+            `Available actions: ${metadata.map((entry) => entry.name).join(", ") || "(none)"}.`,
+        );
       }
 
       return action.run(args as never) as Promise<
@@ -235,6 +255,13 @@ export function store<
       >;
     },
   };
+}
+
+/** Returns a serializable store summary for generic tooling and agents. */
+export function describeStore(
+  store: { describe: () => StoreDescription },
+): StoreDescription {
+  return store.describe();
 }
 
 /** Converts a config object into a runtime action with input/output validation. */

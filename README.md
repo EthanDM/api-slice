@@ -1,13 +1,13 @@
 # Slice
 
-`@cafecito/slice` is a small typed resource layer for TypeScript apps. The v0 goal is narrow: define an API resource once and get stable query keys, validated client calls, TanStack Query hooks, default mutation invalidation, and normalized API errors.
+`@ethandm/slice` is a small typed resource layer for TypeScript apps. The v0 goal is narrow: define an API resource once and get stable query keys, validated client calls, TanStack Query hooks, default mutation invalidation, and normalized API errors.
 
 It is not trying to replace `ky`, Hono, TanStack Query, or an ORM. Slice is the boring glue layer above those tools.
 
 ## Install
 
 ```sh
-npm install @cafecito/slice zod
+npm install @ethandm/slice zod
 ```
 
 Install adapters only when you use them:
@@ -20,7 +20,7 @@ npm install hono
 ## Resource Definition
 
 ```ts
-import { resource } from "@cafecito/slice";
+import { resource } from "@ethandm/slice";
 import { z } from "zod";
 
 const ProjectSchema = z.object({
@@ -61,7 +61,7 @@ projects.keys.detail("project_1");
 Use the built-in `fetch` adapter for a normal JSON API:
 
 ```ts
-import { createFetchHttpClient } from "@cafecito/slice/fetch";
+import { createFetchHttpClient } from "@ethandm/slice/fetch";
 
 const http = createFetchHttpClient({
   baseUrl: "https://api.example.com",
@@ -94,6 +94,14 @@ await client.action("archive", {
   id: "project_1",
   input: { reason: "Done" },
 });
+```
+
+Resources can describe themselves for debug panels, docs, and coding agents:
+
+```ts
+import { describeResource } from "@ethandm/slice";
+
+describeResource(projects);
 ```
 
 ### Fetch Logging
@@ -138,7 +146,7 @@ import {
   createFetchHttpClient,
   createSliceRecorder,
   getSliceSnapshot,
-} from "@cafecito/slice";
+} from "@ethandm/slice";
 
 const recorder = createSliceRecorder({ maxEvents: 300 });
 
@@ -262,7 +270,7 @@ Operation overrides can customize method, path, path params, query params, reque
 ## TanStack Query Hooks
 
 ```ts
-import { createResourceHooks } from "@cafecito/slice/react-query";
+import { createResourceHooks } from "@ethandm/slice/react-query";
 
 export const projectClient = projects.client(http);
 export const projectHooks = createResourceHooks(projects, projectClient);
@@ -332,7 +340,7 @@ import {
   clearSliceQueries,
   getSliceQuerySnapshot,
   invalidateResource,
-} from "@cafecito/slice/react-query";
+} from "@ethandm/slice/react-query";
 
 await invalidateResource(queryClient, projects);
 clearResourceQueries(queryClient, projects);
@@ -348,7 +356,7 @@ const queryState = getSliceQuerySnapshot(queryClient, [projects]);
 Use stores when you want a centralized catalog of backend operations without forcing those operations into CRUD or Drizzle-specific shapes.
 
 ```ts
-import { command, mutation, query, store } from "@cafecito/slice/store";
+import { command, mutation, query, store } from "@ethandm/slice/store";
 import { z } from "zod";
 
 type AppContext = {
@@ -357,46 +365,46 @@ type AppContext = {
   env: Env;
 };
 
-const LienWorkQueueInputSchema = z.object({
+const ReviewQueueInputSchema = z.object({
   scope: z.enum(["mine", "team"]).default("team"),
-  includeResolved: z.boolean().optional(),
+  includeClosed: z.boolean().optional(),
   limit: z.number().optional(),
 });
 
-const LienWorkQueueItemSchema = z.object({
+const ReviewQueueItemSchema = z.object({
   id: z.string(),
-  fileId: z.string(),
-  debtorName: z.string(),
+  recordId: z.string(),
+  title: z.string(),
 });
 
-export const lienStore = store({
-  name: "liens",
+export const reviewStore = store({
+  name: "review",
   actions: {
-    workQueue: query({
-      input: LienWorkQueueInputSchema,
-      output: z.array(LienWorkQueueItemSchema),
-      run: async ({ ctx, input }: { ctx: AppContext; input: z.output<typeof LienWorkQueueInputSchema> }) => {
-        return getLienWorkQueue(ctx.db, {
+    queue: query({
+      input: ReviewQueueInputSchema,
+      output: z.array(ReviewQueueItemSchema),
+      run: async ({ ctx, input }: { ctx: AppContext; input: z.output<typeof ReviewQueueInputSchema> }) => {
+        return getReviewQueue(ctx.db, {
           assignedUserId: input.scope === "mine" ? ctx.user.id : null,
-          includeResolved: input.includeResolved,
+          includeClosed: input.includeClosed,
           limit: input.limit,
         });
       },
     }),
 
-    createReceivable: mutation({
-      input: CreateReceivableSchema,
-      output: ReceivableSchema,
-      run: async ({ ctx, input }: { ctx: AppContext; input: z.output<typeof CreateReceivableSchema> }) => {
-        return createReceivable(ctx.db, input.fileId, input);
+    updateStatus: mutation({
+      input: UpdateReviewStatusSchema,
+      output: ReviewQueueItemSchema,
+      run: async ({ ctx, input }: { ctx: AppContext; input: z.output<typeof UpdateReviewStatusSchema> }) => {
+        return updateReviewStatus(ctx.db, input.recordId, input.status);
       },
     }),
 
-    sendFollowup: command({
-      input: SendLienFollowupSchema,
-      output: SendLienFollowupResultSchema,
-      run: async ({ ctx, input }: { ctx: AppContext; input: z.output<typeof SendLienFollowupSchema> }) => {
-        return sendLienFollowup(ctx.env, input.noticeId, ctx.user.name);
+    sendReminder: command({
+      input: SendReminderSchema,
+      output: SendReminderResultSchema,
+      run: async ({ ctx, input }: { ctx: AppContext; input: z.output<typeof SendReminderSchema> }) => {
+        return sendReminder(ctx.env, input.taskId, ctx.user.name);
       },
     }),
   },
@@ -406,7 +414,7 @@ export const lienStore = store({
 Routes and services can use direct action calls:
 
 ```ts
-const data = await lienStore.actions.workQueue.run({
+const data = await reviewStore.actions.queue.run({
   ctx: { db: c.env.DB, user: getUser(c), env: c.env },
   input: { scope: "mine" },
 });
@@ -415,20 +423,40 @@ const data = await lienStore.actions.workQueue.run({
 Tooling can use the generic runner and metadata catalog:
 
 ```ts
-await lienStore.run("workQueue", {
+await reviewStore.run("queue", {
   ctx,
   input: { scope: "team", limit: 25 },
 });
 
-lienStore.listActions();
+reviewStore.listActions();
 // [
-//   { name: "workQueue", kind: "query", hasInput: true, hasOutput: true },
-//   { name: "createReceivable", kind: "mutation", hasInput: true, hasOutput: true },
-//   { name: "sendFollowup", kind: "command", hasInput: true, hasOutput: true }
+//   { name: "queue", kind: "query", hasInput: true, hasOutput: true },
+//   { name: "updateStatus", kind: "mutation", hasInput: true, hasOutput: true },
+//   { name: "sendReminder", kind: "command", hasInput: true, hasOutput: true }
 // ]
 ```
 
+Stores also expose a serializable description:
+
+```ts
+import { describeStore } from "@ethandm/slice";
+
+describeStore(reviewStore);
+```
+
 The store module is not a database adapter. It is a typed action catalog for service-layer operations that may read a DB, write a DB, call AI providers, send emails, or trigger payment workflows.
+
+## Agent Support
+
+This repo includes agent-focused guidance and examples:
+
+- [AGENTS.md](./AGENTS.md): hard architectural boundaries and preferred shapes.
+- [docs/conventions.md](./docs/conventions.md): resource/store/route/client conventions.
+- [docs/agent-recipes.md](./docs/agent-recipes.md): copyable implementation recipes.
+- [examples/workflow-store](./examples/workflow-store): resource + store + Hono route binding.
+- [examples/inconsistent-backend](./examples/inconsistent-backend): adapting a legacy API.
+- [examples/react-native-client](./examples/react-native-client): client-only usage with recorder/auth hooks.
+- [skills/ethandm-slice/SKILL.md](./skills/ethandm-slice/SKILL.md): repo-versioned Codex skill for agents consuming Slice in other repos.
 
 ## Invalidation Defaults
 
@@ -448,7 +476,7 @@ These return query keys that the TanStack Query adapter invalidates. The default
 ## Hono Routes
 
 ```ts
-import { createHonoResourceRoutes } from "@cafecito/slice/hono";
+import { createHonoResourceRoutes } from "@ethandm/slice/hono";
 
 const projectRoutes = createHonoResourceRoutes(projects, {
   list: async ({ input }) => {
@@ -483,7 +511,7 @@ By default, route errors are serialized as the same API error payload the fetch 
 ## API Errors
 
 ```ts
-import { ApiError, normalizeApiError } from "@cafecito/slice";
+import { ApiError, normalizeApiError } from "@ethandm/slice";
 
 throw new ApiError({
   code: "VALIDATION_ERROR",
@@ -499,6 +527,7 @@ Built now:
 
 - `resource()`
 - stable query keys
+- resource and store introspection helpers
 - validated CRUD client requests
 - per-operation method/path/query/body/response mapping
 - custom resource actions
