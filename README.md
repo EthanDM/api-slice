@@ -68,6 +68,12 @@ const http = createFetchHttpClient({
   headers: () => ({
     authorization: `Bearer ${token}`,
   }),
+  auth: {
+    onUnauthorized: () => {
+      clearToken();
+      navigation.reset({ routes: [{ name: "Login" }] });
+    },
+  },
 });
 
 const client = projects.client(http);
@@ -122,6 +128,58 @@ const http = createFetchHttpClient({
   },
 });
 ```
+
+### Request Recorder
+
+Use the recorder when you want an in-app API history for debugging, support dumps, React Native screens, or tests. It is memory-only by design.
+
+```ts
+import {
+  createFetchHttpClient,
+  createSliceRecorder,
+  getSliceSnapshot,
+} from "@cafecito/slice";
+
+const recorder = createSliceRecorder({ maxEvents: 300 });
+
+const http = createFetchHttpClient({
+  baseUrl: "https://api.example.com",
+  recorder,
+  recorderRedact: (event) => ({
+    ...event,
+    request: {
+      ...event.request,
+      body: "[redacted]",
+    },
+  }),
+});
+
+const unsubscribe = recorder.subscribe((event) => {
+  console.log(event.type, event.request.meta, event.status);
+});
+
+const snapshot = getSliceSnapshot({
+  resources: [projects],
+  recorder,
+});
+```
+
+Recorder events include request, response, and error history with resource metadata when calls come from a Slice resource client:
+
+```ts
+{
+  type: "response",
+  request: {
+    method: "GET",
+    path: "/projects/project_1",
+    meta: { resource: "projects", operation: "detail" }
+  },
+  status: 200,
+  durationMs: 42
+}
+```
+
+Successful response bodies are not retained unless `recordResponseBody: true` is set.
 
 ## Inconsistent Backend APIs
 
@@ -264,6 +322,27 @@ projectHooks.useUpdate({
 });
 ```
 
+### React Query State Utilities
+
+The React Query adapter also exports small state helpers for resource-scoped cache operations and debug views:
+
+```ts
+import {
+  clearResourceQueries,
+  clearSliceQueries,
+  getSliceQuerySnapshot,
+  invalidateResource,
+} from "@cafecito/slice/react-query";
+
+await invalidateResource(queryClient, projects);
+clearResourceQueries(queryClient, projects);
+clearSliceQueries(queryClient, [projects, users]);
+
+const queryState = getSliceQuerySnapshot(queryClient, [projects]);
+```
+
+`getSliceQuerySnapshot()` intentionally omits cached data by default because API payloads often include PII.
+
 ## Invalidation Defaults
 
 ```ts
@@ -338,7 +417,10 @@ Built now:
 - custom resource actions
 - built-in JSON `fetch` HTTP client
 - optional structured fetch logging
+- optional request recorder and debug snapshots
+- fetch auth callbacks for app-owned unauthorized/forbidden handling
 - TanStack Query hook adapter
+- TanStack Query cache utilities and data-free state snapshots
 - Hono route adapter
 - shared API error payloads
 - default invalidation metadata

@@ -104,6 +104,7 @@ export function resource<
           query: operation?.query
             ? operation.query({ input: parsedInput })
             : parsedInput,
+          meta: { resource: config.name, operation: "list" },
         });
 
         return parseOperationOutput(
@@ -120,6 +121,7 @@ export function resource<
             id,
             params: operation?.params,
           }),
+          meta: { resource: config.name, operation: "detail" },
         });
 
         return parseOperationOutput(
@@ -141,6 +143,7 @@ export function resource<
           body: operation?.body
             ? operation.body({ input: parsedInput })
             : parsedInput,
+          meta: { resource: config.name, operation: "create" },
         });
 
         return parseOperationOutput(
@@ -163,6 +166,7 @@ export function resource<
           body: operation?.body
             ? operation.body({ id, input: parsedInput })
             : parsedInput,
+          meta: { resource: config.name, operation: "update" },
         });
 
         return parseOperationOutput(
@@ -181,6 +185,7 @@ export function resource<
           }),
           query: operation?.query?.({ id }),
           body: operation?.body?.({ id }),
+          meta: { resource: config.name, operation: "delete" },
         });
       },
       action: async (name, request) => {
@@ -194,6 +199,7 @@ export function resource<
           }),
           query: action.method === "GET" ? parsedInput : undefined,
           body: action.method === "GET" ? undefined : parsedInput,
+          meta: { resource: config.name, operation: name, action: name },
         });
 
         if (!action.output) {
@@ -211,6 +217,7 @@ export function resource<
 export type {
   HttpClient,
   HttpMethod,
+  HttpRequestMeta,
   Id,
   Resource,
   ResourceActionConfig,

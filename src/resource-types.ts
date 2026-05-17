@@ -107,6 +107,20 @@ export type ResourceOperations<ListInput, CreateInput, UpdateInput, Entity> = {
   delete?: ResourceOperationConfig<undefined, void>;
 };
 
+/**
+ * Optional diagnostic metadata attached by resource clients. Transport
+ * adapters must not depend on this for request correctness; it exists so
+ * recorders and loggers can group calls by app-facing resource operation.
+ */
+export type HttpRequestMeta = {
+  /** Resource name from the `resource()` definition, such as `projects`. */
+  resource?: string;
+  /** CRUD operation or custom action name emitted by the resource client. */
+  operation?: string;
+  /** Present when `operation` came from a custom resource action. */
+  action?: string;
+};
+
 /** Full resource definition consumed by `resource()`. */
 export type ResourceConfig<
   EntitySchema extends z.ZodTypeAny,
@@ -145,6 +159,7 @@ export type HttpClient = <Output>(request: {
   path: string;
   query?: unknown;
   body?: unknown;
+  meta?: HttpRequestMeta;
 }) => Promise<Output>;
 
 /** Stable query-key factory used by the React Query adapter and callers. */

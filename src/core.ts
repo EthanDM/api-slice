@@ -14,9 +14,14 @@ export type {
   NormalizedApiError,
 } from "./errors.js";
 export { resource } from "./resource.js";
+export {
+  createSliceRecorder,
+  getSliceSnapshot,
+} from "./recorder.js";
 export type {
   HttpClient,
   HttpMethod,
+  HttpRequestMeta,
   Id,
   Resource,
   ResourceActionConfig,
@@ -34,3 +39,12 @@ export type {
   ResourceOperations,
   ResourceSchemas,
 } from "./resource.js";
+export type {
+  SliceRecorder,
+  SliceRecorderConfig,
+  SliceRecorderEvent,
+  SliceRecorderEventType,
+  SliceRecorderRequest,
+  SliceRecorderUnsubscribe,
+  SliceSnapshot,
+} from "./recorder.js";

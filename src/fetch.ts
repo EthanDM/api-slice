@@ -4,12 +4,19 @@
  * implementation that fits their environment.
  */
 import { ApiError, type ApiErrorPayload } from "./errors.js";
+import type {
+  SliceRecorder,
+  SliceRecorderEvent,
+  SliceRecorderRequest,
+} from "./recorder.js";
 import type { HttpClient } from "./resource.js";
 
 type HttpRequest = Parameters<HttpClient>[0];
 
 /** Event fields shared by all fetch adapter logging callbacks. */
 export type FetchHttpClientLogEvent = {
+  /** Stable id shared with recorder events for this HTTP call. */
+  id: string;
   /** HTTP verb emitted by the resource client. */
   method: HttpRequest["method"];
   /** Resource-relative path before `baseUrl` is applied. */
@@ -24,6 +31,8 @@ export type FetchHttpClientLogEvent = {
   startedAt: number;
   /** Resolved headers after defaults and auth callbacks have run. */
   headers?: Record<string, string>;
+  /** Optional app-facing resource metadata attached by Slice resource clients. */
+  meta?: HttpRequest["meta"];
 };
 
 /** Emitted immediately before the fetch adapter starts a network request. */
@@ -63,6 +72,14 @@ export type FetchHttpClientLogger = {
   redact?: <Event extends FetchHttpClientLogEvent>(event: Event) => Event;
 };
 
+/** Auth lifecycle hooks for apps that own their own token/session state. */
+export type FetchHttpClientAuth = {
+  /** Called after a 401 response is normalized, before the ApiError is thrown. */
+  onUnauthorized?: (event: FetchHttpClientErrorLogEvent) => void | Promise<void>;
+  /** Called after a 403 response is normalized, before the ApiError is thrown. */
+  onForbidden?: (event: FetchHttpClientErrorLogEvent) => void | Promise<void>;
+};
+
 /** Configuration for the dependency-free JSON fetch adapter. */
 export type FetchHttpClientConfig = {
   /** Optional base URL; omitted means paths remain relative for app-local APIs. */
@@ -71,8 +88,16 @@ export type FetchHttpClientConfig = {
   fetch?: typeof fetch;
   /** Static or async headers resolved for every request. */
   headers?: HeadersInit | (() => HeadersInit | Promise<HeadersInit>);
+  /** Optional auth callbacks; token storage and navigation remain app-owned. */
+  auth?: FetchHttpClientAuth;
   /** Optional structured observer callbacks around request lifecycle. */
   logger?: FetchHttpClientLogger;
+  /** Optional in-memory recorder for request history and dev/debug snapshots. */
+  recorder?: SliceRecorder;
+  /** Last chance to remove tokens, PII, or payloads before recorder storage. */
+  recorderRedact?: (event: SliceRecorderEvent) => SliceRecorderEvent;
+  /** Records parsed successful response bodies; off by default to avoid retaining PII. */
+  recordResponseBody?: boolean;
 };
 
 /**
@@ -96,7 +121,9 @@ export function createFetchHttpClient(
     const url = buildUrl(config.baseUrl, request.path, request.query);
     const headers = await buildHeaders(config.headers, request.body);
     const startedAt = Date.now();
+    const id = createRequestId();
     const logEvent: FetchHttpClientLogEvent = {
+      id,
       method: request.method,
       path: request.path,
       url,
@@ -104,9 +131,11 @@ export function createFetchHttpClient(
       body: request.body,
       startedAt,
       headers: headersToRecord(headers),
+      meta: request.meta,
     };
 
     logRequest(config.logger, logEvent);
+    recordRequest(config, logEvent);
 
     try {
       const response = await fetchImpl(url, {
@@ -118,14 +147,21 @@ export function createFetchHttpClient(
       const output = await readResponse(response);
 
       if (!response.ok) {
-        throw createResponseError(response, output);
+        const error = createResponseError(response, output);
+        const errorEvent = buildErrorEvent(logEvent, error);
+
+        await notifyAuth(config.auth, errorEvent);
+
+        throw error;
       }
 
       logResponse(config.logger, logEvent, response);
+      recordResponse(config, logEvent, response, output);
 
       return output as Output;
     } catch (error) {
       logError(config.logger, logEvent, error);
+      recordError(config, logEvent, error);
       throw error;
     }
   };
@@ -244,6 +280,16 @@ function headersToRecord(headers: Headers): Record<string, string> {
   return Object.fromEntries(headers.entries());
 }
 
+/** Creates local request ids without requiring Node-only crypto APIs. */
+function createRequestId(): string {
+  const random =
+    typeof globalThis.crypto?.randomUUID === "function"
+      ? globalThis.crypto.randomUUID()
+      : Math.random().toString(36).slice(2);
+
+  return `slice_${Date.now().toString(36)}_${random}`;
+}
+
 /** Emits request events after applying the caller-provided redaction policy. */
 function logRequest(
   logger: FetchHttpClientLogger | undefined,
@@ -273,14 +319,7 @@ function logError(
   event: FetchHttpClientLogEvent,
   error: unknown,
 ): void {
-  logger?.error?.(
-    redact(logger, {
-      ...event,
-      error,
-      status: error instanceof ApiError ? error.status : undefined,
-      durationMs: Date.now() - event.startedAt,
-    }),
-  );
+  logger?.error?.(redact(logger, buildErrorEvent(event, error)));
 }
 
 /** Applies caller redaction without mutating the original log event object. */
@@ -289,4 +328,98 @@ function redact<Event extends FetchHttpClientLogEvent>(
   event: Event,
 ): Event {
   return logger?.redact ? logger.redact(event) : event;
+}
+
+/** Builds one error event so auth callbacks, loggers, and recorder agree on fields. */
+function buildErrorEvent(
+  event: FetchHttpClientLogEvent,
+  error: unknown,
+): FetchHttpClientErrorLogEvent {
+  return {
+    ...event,
+    error,
+    status: error instanceof ApiError ? error.status : undefined,
+    durationMs: Date.now() - event.startedAt,
+  };
+}
+
+/** Lets app-owned auth state react to authorization failures without owning auth itself. */
+async function notifyAuth(
+  auth: FetchHttpClientAuth | undefined,
+  event: FetchHttpClientErrorLogEvent,
+): Promise<void> {
+  if (event.status === 401) {
+    await auth?.onUnauthorized?.(event);
+    return;
+  }
+
+  if (event.status === 403) {
+    await auth?.onForbidden?.(event);
+  }
+}
+
+/** Creates the recorder request identity shared by request/response/error events. */
+function toRecorderRequest(event: FetchHttpClientLogEvent): SliceRecorderRequest {
+  return {
+    id: event.id,
+    method: event.method,
+    path: event.path,
+    url: event.url,
+    query: event.query,
+    body: event.body,
+    meta: event.meta,
+  };
+}
+
+/** Stores request events separately from logs so debug panels can replay history. */
+function recordRequest(
+  config: FetchHttpClientConfig,
+  event: FetchHttpClientLogEvent,
+): void {
+  record(config, {
+    type: "request",
+    timestamp: event.startedAt,
+    request: toRecorderRequest(event),
+  });
+}
+
+/** Stores successful responses, optionally including parsed response bodies. */
+function recordResponse(
+  config: FetchHttpClientConfig,
+  event: FetchHttpClientLogEvent,
+  response: Response,
+  output: unknown,
+): void {
+  record(config, {
+    type: "response",
+    timestamp: Date.now(),
+    request: toRecorderRequest(event),
+    status: response.status,
+    durationMs: Date.now() - event.startedAt,
+    response: config.recordResponseBody ? output : undefined,
+  });
+}
+
+/** Stores normalized failures for request history and snapshot diagnostics. */
+function recordError(
+  config: FetchHttpClientConfig,
+  event: FetchHttpClientLogEvent,
+  error: unknown,
+): void {
+  record(config, {
+    type: "error",
+    timestamp: Date.now(),
+    request: toRecorderRequest(event),
+    status: error instanceof ApiError ? error.status : undefined,
+    durationMs: Date.now() - event.startedAt,
+    error,
+  });
+}
+
+/** Applies recorder-specific redaction before retaining events in memory. */
+function record(
+  config: FetchHttpClientConfig,
+  event: SliceRecorderEvent,
+): void {
+  config.recorder?.record(config.recorderRedact?.(event) ?? event);
 }

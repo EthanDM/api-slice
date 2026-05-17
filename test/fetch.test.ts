@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { ApiError, createFetchHttpClient } from "../src/index.js";
+import {
+  ApiError,
+  createFetchHttpClient,
+  createSliceRecorder,
+} from "../src/index.js";
 
 describe("createFetchHttpClient", () => {
   it("serializes query params and reads JSON responses", async () => {
@@ -113,6 +117,7 @@ describe("createFetchHttpClient", () => {
       expect.objectContaining({
         method: "POST",
         path: "/projects",
+        id: expect.any(String),
         url: "/projects",
         body: { name: "Alpha" },
         headers: expect.objectContaining({
@@ -129,6 +134,66 @@ describe("createFetchHttpClient", () => {
         durationMs: expect.any(Number),
       }),
     );
+  });
+
+  it("records request and response history with resource metadata", async () => {
+    const recorder = createSliceRecorder();
+    const http = createFetchHttpClient({
+      fetch: async () => Response.json({ id: "project_1" }),
+      recorder,
+      recordResponseBody: true,
+    });
+
+    await http({
+      method: "GET",
+      path: "/projects/project_1",
+      meta: { resource: "projects", operation: "detail" },
+    });
+
+    const events = recorder.getEvents();
+
+    expect(events).toHaveLength(2);
+    expect(events[0]).toMatchObject({
+      type: "request",
+      request: {
+        method: "GET",
+        path: "/projects/project_1",
+        meta: { resource: "projects", operation: "detail" },
+      },
+    });
+    expect(events[1]).toMatchObject({
+      type: "response",
+      status: 200,
+      response: { id: "project_1" },
+      request: {
+        id: events[0]?.request.id,
+      },
+    });
+  });
+
+  it("calls auth hooks for authorization failures", async () => {
+    const onUnauthorized = vi.fn();
+    const onForbidden = vi.fn();
+    const http = createFetchHttpClient({
+      fetch: async () => Response.json({ message: "Unauthorized" }, { status: 401 }),
+      auth: {
+        onUnauthorized,
+        onForbidden,
+      },
+    });
+
+    await expect(http({ method: "GET", path: "/me" })).rejects.toThrow(
+      ApiError,
+    );
+
+    expect(onUnauthorized).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 401,
+        path: "/me",
+        error: expect.any(ApiError),
+      }),
+    );
+    expect(onForbidden).not.toHaveBeenCalled();
   });
 
   it("emits error log events for failed responses", async () => {

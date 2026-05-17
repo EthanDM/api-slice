@@ -2,6 +2,7 @@
 export * from "./core.js";
 export { createFetchHttpClient } from "./fetch.js";
 export type {
+  FetchHttpClientAuth,
   FetchHttpClientConfig,
   FetchHttpClientErrorLogEvent,
   FetchHttpClientLogEvent,
@@ -15,7 +16,11 @@ export type {
   HonoResourceHandlers,
 } from "./hono.js";
 export {
+  clearResourceQueries,
+  clearSliceQueries,
   createResourceHooks,
+  getSliceQuerySnapshot,
+  invalidateResource,
   invalidateResourceQueries,
 } from "./react-query.js";
 export type {
@@ -23,5 +28,7 @@ export type {
   ResourceHooks,
   ResourceMutationOptions,
   ResourceQueryOptions,
+  SliceQuerySnapshot,
+  SliceQuerySnapshotEntry,
   UpdateVariables,
 } from "./react-query.js";

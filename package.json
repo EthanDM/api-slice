@@ -18,6 +18,10 @@
       "types": "./dist/fetch.d.ts",
       "default": "./dist/fetch.js"
     },
+    "./recorder": {
+      "types": "./dist/recorder.d.ts",
+      "default": "./dist/recorder.js"
+    },
     "./hono": {
       "types": "./dist/hono.d.ts",
       "default": "./dist/hono.js"

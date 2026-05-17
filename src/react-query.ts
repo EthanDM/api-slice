@@ -18,6 +18,10 @@ import type {
 
 type QueryKey = readonly unknown[];
 type QueryKeys = readonly QueryKey[];
+type ResourceQueryRoot = {
+  name: string;
+  keys: { all: QueryKey };
+};
 
 /** Query options callers may override without breaking Slice-owned keys/functions. */
 export type ResourceQueryOptions<Data, Selected = Data> = Omit<
@@ -49,6 +53,34 @@ export type UpdateVariables<UpdateInput> = {
 export type DeleteVariables = {
   /** Entity id used for both the request path and default detail invalidation. */
   id: Id;
+};
+
+/** Minimal serializable view of one TanStack Query cache entry. */
+export type SliceQuerySnapshotEntry = {
+  /** Query hash assigned by TanStack Query. */
+  queryHash: string;
+  /** Original query key, usually produced by a Slice resource key factory. */
+  queryKey: QueryKey;
+  /** First query-key segment when it matches a Slice resource name. */
+  resource?: string;
+  /** TanStack Query status without exposing cached data by default. */
+  status: string;
+  /** Current fetch state, useful for seeing stale/loading cache branches. */
+  fetchStatus: string;
+  /** Whether this query has been invalidated and awaits refetch. */
+  isInvalidated: boolean;
+  /** Last successful data timestamp from TanStack Query. */
+  dataUpdatedAt: number;
+  /** Last error timestamp from TanStack Query. */
+  errorUpdatedAt: number;
+};
+
+/** Snapshot of Slice-owned query-cache state for debug panels and tests. */
+export type SliceQuerySnapshot = {
+  /** Resource names included in this snapshot filter. Empty means all queries. */
+  resources: string[];
+  /** Matching query-cache entries with cache data intentionally omitted. */
+  queries: SliceQuerySnapshotEntry[];
 };
 
 /**
@@ -205,6 +237,71 @@ export async function invalidateResourceQueries(
   await Promise.all(
     keys.map((queryKey) => queryClient.invalidateQueries({ queryKey })),
   );
+}
+
+/** Invalidates every query under a resource root key. */
+export async function invalidateResource(
+  queryClient: QueryClient,
+  resource: ResourceQueryRoot,
+): Promise<void> {
+  await queryClient.invalidateQueries({ queryKey: resource.keys.all });
+}
+
+/** Removes cached queries for one resource without touching unrelated app state. */
+export function clearResourceQueries(
+  queryClient: QueryClient,
+  resource: ResourceQueryRoot,
+): void {
+  queryClient.removeQueries({ queryKey: resource.keys.all });
+}
+
+/** Removes cached queries for a known set of Slice resources. */
+export function clearSliceQueries(
+  queryClient: QueryClient,
+  resources: readonly ResourceQueryRoot[],
+): void {
+  for (const resource of resources) {
+    clearResourceQueries(queryClient, resource);
+  }
+}
+
+/**
+ * Reads a compact query-cache state tree. Cached data is omitted by default
+ * because API payloads often contain PII; use TanStack Query devtools when the
+ * full payload tree is needed in trusted local development.
+ */
+export function getSliceQuerySnapshot(
+  queryClient: QueryClient,
+  resources?: readonly ResourceQueryRoot[],
+): SliceQuerySnapshot {
+  const resourceNames = resources?.map((resource) => resource.name) ?? [];
+  const resourceNameSet = new Set(resourceNames);
+  const queries = queryClient
+    .getQueryCache()
+    .findAll()
+    .filter((query) => {
+      if (resourceNameSet.size === 0) {
+        return true;
+      }
+
+      return resourceNameSet.has(String(query.queryKey[0]));
+    })
+    .map((query): SliceQuerySnapshotEntry => ({
+      queryHash: query.queryHash,
+      queryKey: query.queryKey,
+      resource:
+        typeof query.queryKey[0] === "string" ? query.queryKey[0] : undefined,
+      status: query.state.status,
+      fetchStatus: query.state.fetchStatus,
+      isInvalidated: query.state.isInvalidated,
+      dataUpdatedAt: query.state.dataUpdatedAt,
+      errorUpdatedAt: query.state.errorUpdatedAt,
+    }));
+
+  return {
+    resources: resourceNames,
+    queries,
+  };
 }
 
 /**

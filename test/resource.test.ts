@@ -109,24 +109,33 @@ describe("resource", () => {
         method: "GET",
         path: "/projects",
         query: { search: "alpha" },
+        meta: { resource: "projects", operation: "list" },
       },
       {
         method: "GET",
         path: "/projects/project%201",
+        meta: { resource: "projects", operation: "detail" },
       },
       {
         method: "POST",
         path: "/projects",
+        query: undefined,
         body: { name: "Alpha" },
+        meta: { resource: "projects", operation: "create" },
       },
       {
         method: "PATCH",
         path: "/projects/project_1",
+        query: undefined,
         body: { name: "Beta" },
+        meta: { resource: "projects", operation: "update" },
       },
       {
         method: "DELETE",
         path: "/projects/project_1",
+        query: undefined,
+        body: undefined,
+        meta: { resource: "projects", operation: "delete" },
       },
     ]);
   });
@@ -166,7 +175,13 @@ describe("resource", () => {
       {
         method: "POST",
         path: "/projects/project_1/archive",
+        query: undefined,
         body: { reason: "Done" },
+        meta: {
+          resource: "projects",
+          operation: "archive",
+          action: "archive",
+        },
       },
     ]);
   });
@@ -310,28 +325,33 @@ describe("resource", () => {
         method: "GET",
         path: "/v3/person-search",
         query: { q: "ethan", "page[number]": 2 },
+        meta: { resource: "contacts", operation: "list" },
       },
       {
         method: "GET",
         path: "/legacy/people/person%201",
+        meta: { resource: "contacts", operation: "detail" },
       },
       {
         method: "POST",
         path: "/people/create-new",
         query: undefined,
         body: { first_name: "Ethan" },
+        meta: { resource: "contacts", operation: "create" },
       },
       {
         method: "PUT",
         path: "/v2/person-update/person_1",
         query: undefined,
         body: { first_name: "Ethan" },
+        meta: { resource: "contacts", operation: "update" },
       },
       {
         method: "POST",
         path: "/people/remove",
         query: { person_id: "person_1" },
         body: undefined,
+        meta: { resource: "contacts", operation: "delete" },
       },
     ]);
   });
