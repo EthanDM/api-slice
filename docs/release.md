@@ -20,6 +20,8 @@ npm pack --dry-run
 
 The tarball should include `dist`, `README.md`, `LICENSE`, `CHANGELOG.md`, and `package.json`.
 
+`npm run check` also runs `npm run smoke:pack`, which installs the packed tarball into a temporary consumer project and verifies every public entrypoint imports.
+
 ## Publish
 
 For a public scoped package:

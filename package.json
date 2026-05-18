@@ -72,7 +72,8 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "check": "npm run typecheck && npm run typecheck:examples && npm test && npm run build && npm pack --dry-run",
+    "check": "npm run typecheck && npm run typecheck:examples && npm test && npm run build && npm run smoke:pack",
+    "smoke:pack": "node scripts/smoke-pack.mjs",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "typecheck:examples": "tsc -p tsconfig.examples.json --noEmit"
