@@ -151,7 +151,15 @@ Only use this recipe in React/React Native apps that already use TanStack Query.
 
 ```ts
 const projectClient = projects.client(http);
+export const projectQueries = createResourceQueryOptions(projects, projectClient);
 export const projectHooks = createResourceHooks(projects, projectClient);
+```
+
+Use query options for `useQuery()`, route loaders, prefetching, or codebases that keep `queryOptions.ts` modules:
+
+```ts
+useQuery(projectQueries.list(filters));
+await queryClient.prefetchQuery(projectQueries.detail(id));
 ```
 
 Generated hooks:

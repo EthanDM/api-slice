@@ -120,9 +120,27 @@ const projectsList = await client.list({ search: "alpha" });
 Use TanStack Query only when the app already wants TanStack Query for server-state caching:
 
 ```ts
-import { createResourceHooks, createSliceHooks } from "@ethandm/api-slice/react-query";
+import {
+  createResourceHooks,
+  createResourceQueryOptions,
+  createSliceHooks,
+  createSliceQueryOptions,
+} from "@ethandm/api-slice/react-query";
 
+const projectQueries = createResourceQueryOptions(projects, projects.client(http));
 const hooks = createResourceHooks(projects, projects.client(http));
+
+useQuery(projectQueries.list({ search: "alpha" }));
+
+const sliceQueries = createSliceQueryOptions({
+  resources: {
+    projects,
+    users,
+  },
+  clients: api,
+});
+
+useQuery(sliceQueries.projects.detail("project_1"));
 
 const sliceHooks = createSliceHooks({
   resources: {

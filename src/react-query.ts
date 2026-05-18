@@ -1,11 +1,12 @@
 import {
+  queryOptions,
   useMutation,
   useQuery,
   useQueryClient,
   type QueryClient,
+  type UndefinedInitialDataOptions,
   type UseMutationOptions,
   type UseMutationResult,
-  type UseQueryOptions,
   type UseQueryResult,
 } from "@tanstack/react-query";
 
@@ -25,11 +26,23 @@ type ResourceQueryRoot = {
   keys: { all: QueryKey };
 };
 
-/** Query options callers may override without breaking Slice-owned keys/functions. */
+/**
+ * Query options callers may override without breaking Slice-owned keys/functions.
+ * `initialData` stays out of this surface so factory output consistently uses
+ * TanStack Query's undefined-data overload; seed caches with `setQueryData()`
+ * when a screen already has data.
+ */
 export type ResourceQueryOptions<Data, Selected = Data> = Omit<
-  UseQueryOptions<Data, Error, Selected, QueryKey>,
-  "queryKey" | "queryFn"
+  UndefinedInitialDataOptions<Data, Error, Selected, QueryKey>,
+  "queryKey" | "queryFn" | "initialData"
 >;
+
+/** TanStack Query options returned by Slice's resource-level option builders. */
+export type ResourceQueryOptionsResult<Data, Selected = Data> =
+  UndefinedInitialDataOptions<Data, Error, Selected, QueryKey> & {
+    /** Slice-owned cache key for the target list/detail request. */
+    queryKey: QueryKey;
+  };
 
 /**
  * Mutation options that preserve TanStack Query behavior while letting Slice own
@@ -132,6 +145,23 @@ export type ResourceHooks<
   >;
 };
 
+/** Query option builders for callers that prefer `useQuery(options)` composition. */
+export type ResourceQueryOptionsFactory<
+  Entity,
+  ListInput,
+> = {
+  /** Builds TanStack Query options for reading a resource list. */
+  list: <Selected = Entity[]>(
+    input?: ListInput,
+    options?: ResourceQueryOptions<Entity[], Selected>,
+  ) => ResourceQueryOptionsResult<Entity[], Selected>;
+  /** Builds TanStack Query options for reading one resource by id. */
+  detail: <Selected = Entity>(
+    id: Id,
+    options?: ResourceQueryOptions<Entity, Selected>,
+  ) => ResourceQueryOptionsResult<Entity, Selected>;
+};
+
 /** Hook registry produced by binding Slice clients to matching resources. */
 export type SliceHooks<Resources extends Record<string, AnyResource>> = {
   [Name in keyof Resources]: Resources[Name] extends Resource<
@@ -144,6 +174,53 @@ export type SliceHooks<Resources extends Record<string, AnyResource>> = {
     ? ResourceHooks<Entity, ListInput, CreateInput, UpdateInput, Actions>
     : never;
 };
+
+/** Query option registry produced by binding Slice clients to matching resources. */
+export type SliceQueryOptions<Resources extends Record<string, AnyResource>> = {
+  [Name in keyof Resources]: ReturnType<Resources[Name]["client"]> extends {
+    list: (input?: infer ListInput) => Promise<unknown[]>;
+    detail: (id: Id) => Promise<infer Entity>;
+  }
+    ? ResourceQueryOptionsFactory<Entity, ListInput>
+    : never;
+};
+
+/**
+ * Creates TanStack Query option builders for an already-configured resource
+ * client. Use this when callers want `useQuery`, `prefetchQuery`, or
+ * `ensureQueryData` composition instead of generated hooks.
+ */
+export function createResourceQueryOptions<
+  Entity,
+  ListInput,
+  CreateInput,
+  UpdateInput,
+  Actions extends RuntimeResourceActionMap = {},
+>(
+  resource: Resource<Entity, ListInput, CreateInput, UpdateInput, Actions>,
+  client: ResourceClient<Entity, ListInput, CreateInput, UpdateInput, Actions>,
+): ResourceQueryOptionsFactory<Entity, ListInput> {
+  return {
+    list: <Selected = Entity[]>(
+      input?: ListInput,
+      options?: ResourceQueryOptions<Entity[], Selected>,
+    ) =>
+      queryOptions({
+        ...options,
+        queryKey: resource.keys.list(input) as QueryKey,
+        queryFn: () => client.list(input),
+      }),
+    detail: <Selected = Entity>(
+      id: Id,
+      options?: ResourceQueryOptions<Entity, Selected>,
+    ) =>
+      queryOptions({
+        ...options,
+        queryKey: resource.keys.detail(id) as QueryKey,
+        queryFn: () => client.detail(id),
+      }) as ResourceQueryOptionsResult<Entity, Selected>,
+  };
+}
 
 /**
  * Creates React Query hooks for an already-configured resource client. The
@@ -160,19 +237,13 @@ export function createResourceHooks<
   resource: Resource<Entity, ListInput, CreateInput, UpdateInput, Actions>,
   client: ResourceClient<Entity, ListInput, CreateInput, UpdateInput, Actions>,
 ): ResourceHooks<Entity, ListInput, CreateInput, UpdateInput, Actions> {
+  const queries = createResourceQueryOptions(resource, client);
+
   return {
     useList: (input, options) =>
-      useQuery({
-        ...options,
-        queryKey: resource.keys.list(input) as QueryKey,
-        queryFn: () => client.list(input),
-      }),
+      useQuery(queries.list(input, options)),
     useDetail: (id, options) =>
-      useQuery({
-        ...options,
-        queryKey: resource.keys.detail(id) as QueryKey,
-        queryFn: () => client.detail(id),
-      }),
+      useQuery(queries.detail(id, options)),
     useCreate: (options) => {
       const queryClient = useQueryClient();
 
@@ -242,6 +313,34 @@ export function createResourceHooks<
       });
     },
   };
+}
+
+/**
+ * Creates a named query-options registry from already-bound resource clients.
+ * This mirrors `createSliceHooks()` for apps that keep query option factories
+ * in separate modules.
+ */
+export function createSliceQueryOptions<
+  Resources extends Record<string, AnyResource>,
+>(config: {
+  resources: Resources;
+  clients: SliceClient<Resources>;
+}): SliceQueryOptions<Resources> {
+  return Object.fromEntries(
+    Object.entries(config.resources).map(([name, resource]) => [
+      name,
+      createResourceQueryOptions(
+        resource as Resource<any, any, any, any, any>,
+        config.clients[name as keyof Resources] as ResourceClient<
+          any,
+          any,
+          any,
+          any,
+          any
+        >,
+      ),
+    ]),
+  ) as SliceQueryOptions<Resources>;
 }
 
 /**

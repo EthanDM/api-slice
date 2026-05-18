@@ -43,7 +43,12 @@ try {
       import { createSliceClient, createSliceManifest, resource, store } from "@ethandm/api-slice";
       import { createFetchHttpClient } from "@ethandm/api-slice/fetch";
       import { createHonoResourceRoutes } from "@ethandm/api-slice/hono";
-      import { createResourceHooks, createSliceHooks } from "@ethandm/api-slice/react-query";
+      import {
+        createResourceHooks,
+        createResourceQueryOptions,
+        createSliceHooks,
+        createSliceQueryOptions,
+      } from "@ethandm/api-slice/react-query";
       import { createSliceRecorder } from "@ethandm/api-slice/recorder";
       import { z } from "zod";
 
@@ -55,13 +60,15 @@ try {
       });
       const http = async () => [{ id: "project_1" }];
       const clients = createSliceClient({ http, resources: { projects } });
+      const queries = createSliceQueryOptions({ resources: { projects }, clients });
       const hooks = createSliceHooks({ resources: { projects }, clients });
+      const projectQueries = createResourceQueryOptions(projects, clients.projects);
       const manifest = createSliceManifest({ resources: { projects } });
 
       if (!createFetchHttpClient || !createHonoResourceRoutes || !createResourceHooks || !createSliceRecorder || !store) {
         throw new Error("Expected all package entrypoints to import.");
       }
-      if (!hooks.projects || manifest.resources[0]?.name !== "projects") {
+      if (!hooks.projects || !queries.projects || projectQueries.detail("project_1").queryKey[0] !== "projects" || manifest.resources[0]?.name !== "projects") {
         throw new Error("Expected package helpers to execute.");
       }
     `,

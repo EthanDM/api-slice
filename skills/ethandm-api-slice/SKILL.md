@@ -155,10 +155,11 @@ export const projectClient = projects.client(http);
 For React Query:
 
 ```ts
+export const projectQueries = createResourceQueryOptions(projects, projectClient);
 export const projectHooks = createResourceHooks(projects, projectClient);
 ```
 
-Do not introduce TanStack Query solely because Slice exists. Use the plain client for React Native or simpler apps when that is enough.
+Prefer `createResourceQueryOptions()` when the target repo already uses `queryOptions.ts` modules, route loaders, or explicit `useQuery(projectQueries.list(filters))` calls. Use generated hooks when that matches the existing app style. Do not introduce TanStack Query solely because Slice exists.
 
 ## Introspection And Debugging
 

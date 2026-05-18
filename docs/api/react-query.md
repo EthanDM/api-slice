@@ -1,15 +1,17 @@
 # React Query Adapter
 
-`createResourceHooks()` creates TanStack Query hooks for a resource client.
+`createResourceQueryOptions()` creates TanStack Query option builders for a resource client.
+`createResourceHooks()` creates hooks from those same option builders.
 
 This is an optional adapter. Slice core does not require React or TanStack Query.
 
 ```ts
 const projectClient = projects.client(http);
+const projectQueries = createResourceQueryOptions(projects, projectClient);
 const projectHooks = createResourceHooks(projects, projectClient);
 ```
 
-Use `createSliceHooks()` when multiple resources already share clients from `createSliceClient()`:
+Use `createSliceQueryOptions()` and `createSliceHooks()` when multiple resources already share clients from `createSliceClient()`:
 
 ```ts
 const api = createSliceClient({
@@ -20,6 +22,14 @@ const api = createSliceClient({
   },
 });
 
+const queries = createSliceQueryOptions({
+  resources: {
+    projects,
+    users,
+  },
+  clients: api,
+});
+
 const hooks = createSliceHooks({
   resources: {
     projects,
@@ -28,8 +38,32 @@ const hooks = createSliceHooks({
   clients: api,
 });
 
+useQuery(queries.projects.list(filters));
 hooks.projects.useList(filters);
 hooks.users.useDetail("user_1");
+```
+
+## Query Options
+
+Use query options when a codebase prefers colocated `queryOptions.ts` modules, route loaders, prefetching, or direct `useQuery()` composition:
+
+```ts
+useQuery(projectQueries.list(filters));
+useQuery(projectQueries.detail(id));
+
+await queryClient.prefetchQuery(projectQueries.detail(id));
+await queryClient.ensureQueryData(projectQueries.list(filters));
+```
+
+Slice owns only the query key and query function. Callers can still pass normal TanStack Query options:
+
+```ts
+useQuery(
+  projectQueries.list(filters, {
+    staleTime: 30_000,
+    select: (projects) => projects.filter((project) => project.active),
+  }),
+);
 ```
 
 ## Hooks

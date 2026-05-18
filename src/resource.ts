@@ -20,6 +20,7 @@ import type {
   ResourceActionOutput,
   ResourceConfig,
   ResourceKeys,
+  ResourceOperations,
   RuntimeActions,
   RuntimeResourceAction,
   SliceClient,
@@ -122,7 +123,10 @@ export function resource<
     client: (http) => ({
       list: async (input) => {
         const operation = config.operations?.list;
-        const parsedInput = parseOptional(config.schemas.listInput, input);
+        const parsedInput = parseOptional(
+          config.schemas.listInput,
+          input,
+        ) as ListInput;
         const output = await http<unknown>({
           method: operation?.method ?? "GET",
           path: buildOperationPath(operation?.path ?? config.path, {
@@ -160,7 +164,10 @@ export function resource<
       },
       create: async (input) => {
         const operation = config.operations?.create;
-        const parsedInput = parseRequired(config.schemas.createInput, input);
+        const parsedInput = parseRequired(
+          config.schemas.createInput,
+          input,
+        ) as CreateInput;
         const output = await http<unknown>({
           method: operation?.method ?? "POST",
           path: buildOperationPath(operation?.path ?? config.path, {
@@ -182,7 +189,10 @@ export function resource<
       },
       update: async (id, input) => {
         const operation = config.operations?.update;
-        const parsedInput = parseRequired(config.schemas.updateInput, input);
+        const parsedInput = parseRequired(
+          config.schemas.updateInput,
+          input,
+        ) as UpdateInput;
         const output = await http<unknown>({
           method: operation?.method ?? "PATCH",
           path: buildOperationPath(operation?.path ?? `${config.path}/:id`, {
@@ -277,13 +287,7 @@ export function createSliceClient<
 
 /** Lists CRUD operations with custom transport mappings for diagnostics. */
 function getConfiguredOperations(
-  operations: ResourceConfig<
-    z.ZodTypeAny,
-    z.ZodTypeAny | undefined,
-    z.ZodTypeAny | undefined,
-    z.ZodTypeAny | undefined,
-    ResourceActionMap
-  >["operations"],
+  operations: ResourceOperations<any, any, any, any> | undefined,
 ): ResourceDescription["operations"] {
   if (!operations) {
     return [];

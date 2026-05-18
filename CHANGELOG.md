@@ -12,6 +12,8 @@ This project uses semantic versioning once published.
 - Added backend `store()` action catalogs with `query()`, `mutation()`, and `command()` intent.
 - Added Hono route adapter for conventional resource CRUD/action routes.
 - Added TanStack Query hook and cache helper adapter.
+- Added TanStack Query query-options factories for `useQuery`, `prefetchQuery`, and module-level option reuse.
 - Added `createSliceHooks()` for binding React Query hooks across a client registry.
 - Added `createSliceManifest()` for read-only resource/store catalogs.
+- Set Zod 4 as the default tested schema dependency while keeping Zod 3 in the peer range.
 - Added API errors, request recorder, resource/store introspection, docs, examples, and Codex skill guidance.

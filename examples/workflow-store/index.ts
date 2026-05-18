@@ -72,7 +72,7 @@ export const reviewStore = store({
     queue: query({
       input: ReviewQueueInputSchema,
       output: z.array(ReviewQueueItemSchema),
-      run: async ({ ctx, input }: { ctx: AppContext; input: z.input<typeof ReviewQueueInputSchema> }) => {
+      run: async ({ ctx, input }: { ctx: AppContext; input: z.output<typeof ReviewQueueInputSchema> }) => {
         return getReviewQueue(ctx.db, {
           assignedUserId: input.scope === "mine" ? ctx.user.id : null,
           includeClosed: input.includeClosed,

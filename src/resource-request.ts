@@ -106,7 +106,7 @@ export function parseOperationOutput<Output>(
     ? operation.response.parse(output)
     : defaultSchema.parse(output);
 
-  return operation?.select ? operation.select(parsed) : parsed;
+  return (operation?.select ? operation.select(parsed) : parsed) as Output;
 }
 
 /** Parses optional input schemas while preserving `undefined` as "no input". */

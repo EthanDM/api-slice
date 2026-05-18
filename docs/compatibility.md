@@ -21,7 +21,9 @@ The library is developed against TypeScript 5.8.
 
 Required:
 
-- `zod`: `^3.25.0`
+- `zod`: `^4.0.0 || ^3.25.0`
+
+Slice is tested against Zod 4 by default. Zod 3 remains accepted for existing apps while the public schema APIs used by Slice stay compatible.
 
 Optional adapter peers:
 
@@ -40,7 +42,12 @@ import { createSliceClient, createSliceManifest, resource, store } from "@ethand
 import { resource } from "@ethandm/api-slice/core";
 import { createFetchHttpClient } from "@ethandm/api-slice/fetch";
 import { createHonoResourceRoutes } from "@ethandm/api-slice/hono";
-import { createResourceHooks, createSliceHooks } from "@ethandm/api-slice/react-query";
+import {
+  createResourceHooks,
+  createResourceQueryOptions,
+  createSliceHooks,
+  createSliceQueryOptions,
+} from "@ethandm/api-slice/react-query";
 import { createSliceRecorder } from "@ethandm/api-slice/recorder";
 import { store } from "@ethandm/api-slice/store";
 ```

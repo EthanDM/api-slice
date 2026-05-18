@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
 import {
+  createResourceQueryOptions,
+  createSliceQueryOptions,
   clearResourceQueries,
   clearSliceQueries,
   createSliceHooks,
@@ -102,6 +104,84 @@ describe("React Query state helpers", () => {
         },
       ],
     });
+  });
+});
+
+describe("query option factories", () => {
+  const projects = resource({
+    name: "projects",
+    path: "/projects",
+    schemas: {
+      entity: z.object({ id: z.string() }),
+      listInput: z.object({ search: z.string().optional() }).optional(),
+    },
+  });
+  const tasks = resource({
+    name: "tasks",
+    path: "/tasks",
+    schemas: {
+      entity: z.object({ id: z.string() }),
+    },
+  });
+
+  it("builds resource query options for lists and details", async () => {
+    const client = projects.client(async <Output>() => {
+      return [{ id: "project_1" }] as Output;
+    });
+    const queries = createResourceQueryOptions(projects, client);
+
+    const listOptions = queries.list({ search: "alpha" });
+    const detailOptions = queries.detail("project_1");
+
+    expect(listOptions.queryKey).toEqual([
+      "projects",
+      "list",
+      { search: "alpha" },
+    ]);
+    expect(detailOptions.queryKey).toEqual([
+      "projects",
+      "detail",
+      "project_1",
+    ]);
+    const queryFn = listOptions.queryFn;
+    if (typeof queryFn !== "function") {
+      throw new Error("Expected list query options to include a query function.");
+    }
+
+    await expect(queryFn({} as never)).resolves.toEqual([
+      { id: "project_1" },
+    ]);
+  });
+
+  it("binds query option registries for multiple resource clients", () => {
+    const http: HttpClient = async <Output>() => [] as Output;
+    const clients = createSliceClient({
+      http,
+      resources: {
+        projects,
+        tasks,
+      },
+    });
+
+    const queries = createSliceQueryOptions({
+      resources: {
+        projects,
+        tasks,
+      },
+      clients,
+    });
+
+    expect(Object.keys(queries)).toEqual(["projects", "tasks"]);
+    expect(queries.projects.detail("project_1").queryKey).toEqual([
+      "projects",
+      "detail",
+      "project_1",
+    ]);
+    expect(queries.tasks.list().queryKey).toEqual([
+      "tasks",
+      "list",
+      undefined,
+    ]);
   });
 });
 

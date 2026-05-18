@@ -13,7 +13,7 @@ It is not trying to replace `ky`, Hono, TanStack Query, or an ORM. Slice is the 
 - Client-only or React Native: start with `resource()` and `createFetchHttpClient()`.
 - Hono backend: add `createHonoResourceRoutes()`.
 - Service-layer/backend workflow: add `store()`, `query()`, `mutation()`, and `command()`.
-- TanStack Query app: optionally add `createResourceHooks()` from the React Query adapter.
+- TanStack Query app: optionally add query-options factories or hooks from the React Query adapter.
 - Inconsistent backend API: use `operations`.
 
 ## Docs
@@ -42,7 +42,10 @@ Framework adapters live behind explicit subpaths:
 
 ```ts
 import { createHonoResourceRoutes } from "@ethandm/api-slice/hono";
-import { createResourceHooks } from "@ethandm/api-slice/react-query";
+import {
+  createResourceHooks,
+  createResourceQueryOptions,
+} from "@ethandm/api-slice/react-query";
 ```
 
 ## Install
@@ -348,13 +351,28 @@ Operation overrides can customize method, path, path params, query params, reque
 The core client works without React, React Query, or any cache library. Use this adapter only in apps that already use TanStack Query or intentionally want it for server-state caching.
 
 ```ts
-import { createResourceHooks, createSliceHooks } from "@ethandm/api-slice/react-query";
+import {
+  createResourceHooks,
+  createResourceQueryOptions,
+  createSliceHooks,
+  createSliceQueryOptions,
+} from "@ethandm/api-slice/react-query";
 
 export const projectClient = projects.client(http);
+export const projectQueries = createResourceQueryOptions(projects, projectClient);
 export const projectHooks = createResourceHooks(projects, projectClient);
 ```
 
-The adapter wraps an existing resource client:
+Use query-options factories when you prefer normal TanStack Query calls or module-level option reuse:
+
+```ts
+const projectsQuery = useQuery(projectQueries.list({ search: "alpha" }));
+const projectQuery = useQuery(projectQueries.detail("project_1"));
+
+await queryClient.prefetchQuery(projectQueries.detail("project_1"));
+```
+
+Generated hooks wrap the same query options:
 
 ```ts
 const projectsQuery = projectHooks.useList({ search: "alpha" });
@@ -396,6 +414,14 @@ archiveProject.mutate({
 If you already use `createSliceClient()`, bind hooks as a matching registry:
 
 ```ts
+const queries = createSliceQueryOptions({
+  resources: {
+    projects,
+    users,
+  },
+  clients: api,
+});
+
 const hooks = createSliceHooks({
   resources: {
     projects,
@@ -404,6 +430,7 @@ const hooks = createSliceHooks({
   clients: api,
 });
 
+useQuery(queries.projects.list({ search: "alpha" }));
 hooks.projects.useList({ search: "alpha" });
 hooks.users.useDetail("user_1");
 ```

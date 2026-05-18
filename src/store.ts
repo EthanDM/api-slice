@@ -8,6 +8,11 @@ export type StoreActionInput<InputSchema> = InputSchema extends z.ZodTypeAny
   ? z.input<InputSchema>
   : undefined;
 
+/** Extracts the post-parse input value action implementations receive. */
+export type StoreActionParsedInput<InputSchema> = InputSchema extends z.ZodTypeAny
+  ? z.output<InputSchema>
+  : undefined;
+
 /** Extracts the parsed output value returned by an optional Zod schema. */
 export type StoreActionOutput<OutputSchema> = OutputSchema extends z.ZodTypeAny
   ? z.output<OutputSchema>
@@ -39,7 +44,7 @@ export type StoreActionConfig<
   output?: OutputSchema;
   /** Executes the app-owned backend operation with already-validated input. */
   run: (
-    args: StoreActionRunArgs<StoreActionInput<InputSchema>, Context>,
+    args: StoreActionRunArgs<StoreActionParsedInput<InputSchema>, Context>,
   ) =>
     | StoreActionOutput<OutputSchema>
     | Promise<StoreActionOutput<OutputSchema>>;
@@ -287,7 +292,7 @@ function defineAction<
       const parsedInput = parseOptional(
         config.input,
         input,
-      ) as StoreActionInput<InputSchema>;
+      ) as StoreActionParsedInput<InputSchema>;
       const output = await config.run({ ctx, input: parsedInput });
 
       return parseOutput(config.output, output) as StoreActionOutput<OutputSchema>;

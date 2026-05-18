@@ -44,7 +44,12 @@ Then verify imports:
 import { createSliceClient, createSliceManifest, resource, store } from "@ethandm/api-slice";
 import { createFetchHttpClient } from "@ethandm/api-slice/fetch";
 import { createHonoResourceRoutes } from "@ethandm/api-slice/hono";
-import { createResourceHooks, createSliceHooks } from "@ethandm/api-slice/react-query";
+import {
+  createResourceHooks,
+  createResourceQueryOptions,
+  createSliceHooks,
+  createSliceQueryOptions,
+} from "@ethandm/api-slice/react-query";
 ```
 
 ## Versioning
