@@ -5,22 +5,26 @@ This guide is for publishing `@ethandm/api-slice`.
 ## Preflight
 
 1. Confirm the package name, version, license, and repository in `package.json`.
-2. Update `CHANGELOG.md`.
-3. Run:
+2. Confirm the GitHub repository exists at `https://github.com/EthanDM/api-slice`.
+3. Confirm `git remote -v` points `origin` at that repository.
+4. Update `CHANGELOG.md`.
+5. Run:
 
 ```sh
 npm run check
 ```
 
-4. Inspect the tarball contents:
+6. Inspect the tarball contents:
 
 ```sh
 npm pack --dry-run
 ```
 
-The tarball should include `dist`, `README.md`, `LICENSE`, `CHANGELOG.md`, and `package.json`.
+The tarball should include `dist`, `README.md`, `LICENSE`, `CHANGELOG.md`, `package.json`, `docs`, `examples`, and `skills`.
 
 `npm run check` also runs `npm run smoke:pack`, which installs the packed tarball into a temporary consumer project and verifies every public entrypoint imports.
+
+`npm pack` and `npm publish` run `prepack`, so `dist` is rebuilt before the tarball is created.
 
 ## Publish
 
@@ -29,6 +33,8 @@ For a public scoped package:
 ```sh
 npm publish --access public
 ```
+
+`npm publish` runs `prepublishOnly`, which runs the full check suite before publishing.
 
 ## Post-Publish Smoke Test
 

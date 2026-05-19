@@ -53,8 +53,7 @@
     "CHANGELOG.md",
     "docs",
     "examples",
-    "skills",
-    "AGENTS.md"
+    "skills"
   ],
   "publishConfig": {
     "access": "public"
@@ -73,6 +72,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "check": "npm run typecheck && npm run typecheck:examples && npm test && npm run build && npm run smoke:pack",
+    "prepack": "npm run build",
+    "prepublishOnly": "npm run check",
     "smoke:pack": "node scripts/smoke-pack.mjs",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
